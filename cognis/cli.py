@@ -42,6 +42,12 @@ def main():
     print(f"Saving {args.output}...")
     save_audio(args.output, mastered, sr)
     
+    recipe_path = args.output + ".recipe.json"
+    print(f"Saving recipe to {recipe_path}...")
+    from cognis.serialization.recipe import serialize_recipe
+    with open(recipe_path, "w") as f:
+        f.write(serialize_recipe(recipe))
+    
     print("\n--- QC Report ---")
     print(f"Integrated Loudness: {report.integrated_loudness:.2f} LUFS")
     print(f"True Peak:           {report.true_peak:.2f} dBFS")

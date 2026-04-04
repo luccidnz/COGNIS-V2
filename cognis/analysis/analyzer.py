@@ -24,7 +24,8 @@ class Analyzer:
         
         # Crest factor
         rms = np.sqrt(np.mean(audio**2))
-        crest_factor = 0.0 if rms < 1e-10 else 20 * np.log10(sample_peak / rms)
+        rms_dbfs = -70.0 if rms < 1e-10 else 20 * np.log10(rms)
+        crest_factor = max(0.0, sample_peak - rms_dbfs)
         
         loudness_measures = LoudnessMeasures(
             integrated_loudness=integrated,

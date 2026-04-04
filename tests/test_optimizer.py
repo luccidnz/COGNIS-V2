@@ -24,3 +24,5 @@ def test_optimizer_returns_params():
     assert isinstance(best_params, dict)
     assert "brightness" in best_params
     assert "width" in best_params
+    assert "bass_preservation" in best_params
+    assert "dynamics_preservation" in best_params

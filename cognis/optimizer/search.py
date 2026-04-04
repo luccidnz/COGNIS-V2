@@ -17,33 +17,37 @@ def grid_search(
     """
     
     # Define search space
-    # For MVP, we search over a small grid of brightness and width
-    brightness_grid = [-0.5, 0.0, 0.5]
-    width_grid = [0.8, 1.0, 1.2]
+    # For MVP, we search over a small grid of brightness, width, bass_preservation, and dynamics_preservation
+    brightness_grid = [-0.2, 0.0, 0.2]
+    width_grid = [0.9, 1.0, 1.1]
+    bass_preservation_grid = [0.8, 1.0]
+    dynamics_preservation_grid = [0.8, 1.0]
     
     best_score = float('inf')
     best_params = {"brightness": 0.0, "width": 1.0, "bass_preservation": 1.0, "dynamics_preservation": 1.0}
     
     for b in brightness_grid:
         for w in width_grid:
-            params = {
-                "brightness": b,
-                "width": w,
-                "bass_preservation": 1.0, # Fixed for MVP search
-                "dynamics_preservation": 1.0 # Fixed for MVP search
-            }
-            
-            # Render candidate
-            rendered = render_fn(audio, params)
-            
-            # Analyze
-            analysis = analyzer.analyze(rendered, sr)
-            
-            # Score
-            score = compute_objective(analysis, targets)
-            
-            if score < best_score:
-                best_score = score
-                best_params = params
-                
+            for bp in bass_preservation_grid:
+                for dp in dynamics_preservation_grid:
+                    params = {
+                        "brightness": b,
+                        "width": w,
+                        "bass_preservation": bp,
+                        "dynamics_preservation": dp
+                    }
+                    
+                    # Render candidate
+                    rendered = render_fn(audio, params)
+                    
+                    # Analyze
+                    analysis = analyzer.analyze(rendered, sr)
+                    
+                    # Score
+                    score = compute_objective(analysis, targets)
+                    
+                    if score < best_score:
+                        best_score = score
+                        best_params = params
+                        
     return best_params

@@ -83,21 +83,26 @@ def compute_loudness(audio: np.ndarray, sr: int):
         
     momentary = -0.691 + 10 * np.log10(np.max(block_energies) + 1e-10)
     
-    sample_peak = np.max(np.abs(audio))
+    sample_peak_linear = np.max(np.abs(audio))
     
     # True peak (4x oversampling approximation)
     if audio.shape[1] > 100:
         # Just oversample a small chunk around the peak for speed in MVP
-        peak_idx = np.argmax(np.abs(audio[0]))
+        # We should find the peak across all channels, not just channel 0
+        peak_idx = np.argmax(np.max(np.abs(audio), axis=0))
         start = max(0, peak_idx - 50)
         end = min(audio.shape[1], peak_idx + 50)
         chunk = audio[:, start:end]
         os_chunk = resample_poly(chunk, 4, 1, axis=-1)
-        true_peak = np.max(np.abs(os_chunk))
+        true_peak_linear = np.max(np.abs(os_chunk))
     else:
-        true_peak = sample_peak
+        true_peak_linear = sample_peak_linear
         
     # Ensure true peak is at least sample peak
-    true_peak = max(true_peak, sample_peak)
+    true_peak_linear = max(true_peak_linear, sample_peak_linear)
     
-    return integrated, short_term, momentary, true_peak, sample_peak
+    # Convert to dBFS
+    sample_peak_dbfs = 20 * np.log10(sample_peak_linear + 1e-10)
+    true_peak_dbfs = 20 * np.log10(true_peak_linear + 1e-10)
+    
+    return integrated, short_term, momentary, true_peak_dbfs, sample_peak_dbfs

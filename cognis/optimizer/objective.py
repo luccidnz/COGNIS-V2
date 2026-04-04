@@ -10,7 +10,7 @@ def compute_objective(analysis: AnalysisResult, targets: TargetValues) -> float:
     
     # Hard constraints (heavily penalized if violated)
     # True peak
-    tp_violation = max(0.0, analysis.loudness.true_peak - (10 ** (targets.ceiling_db / 20.0)))
+    tp_violation = max(0.0, analysis.loudness.true_peak - targets.ceiling_db)
     score += tp_violation * 1000.0
     
     # Soft penalties
