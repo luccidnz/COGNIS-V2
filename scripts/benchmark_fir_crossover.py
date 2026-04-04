@@ -1,8 +1,10 @@
 import time
 
 import numpy as np
+from scipy.signal import fftconvolve
 
 from cognis.dsp.filters import (
+    apply_fir,
     clear_fir_design_cache,
     get_fir_design_cache_info,
     get_linear_phase_three_band_splitter,
@@ -52,6 +54,12 @@ def main() -> None:
         ),
         iterations=200,
     )
+    reference_low = _benchmark(
+        "reference per-channel fftconvolve(low band)",
+        lambda: np.vstack([fftconvolve(channel, splitter.low_taps, mode="same") for channel in audio]),
+        iterations=25,
+    )
+    optimized_low = _benchmark("apply_fir(low band)", lambda: apply_fir(audio, splitter.low_taps), iterations=25)
     repeated_split = _benchmark("splitter.split(audio)", lambda: splitter.split(audio), iterations=25)
     wrapper_split = _benchmark(
         "split_linear_phase_three_band(audio, ...)",
@@ -68,6 +76,7 @@ def main() -> None:
 
     cache_info = get_fir_design_cache_info()
     print(f"cache info: {cache_info}")
+    print(f"apply_fir vs reference fft ratio: {optimized_low / reference_low:.4f}")
     print(f"cached lookup vs direct split ratio: {warm_lookup / repeated_split:.4f}")
     print(f"wrapper split vs direct split ratio: {wrapper_split / repeated_split:.4f}")
 

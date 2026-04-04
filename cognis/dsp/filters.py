@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from functools import lru_cache
 
 import numpy as np
-from scipy.signal import butter, fftconvolve, firwin, sosfilt
+from scipy.signal import butter, convolve, firwin, sosfilt
 
 
 WindowSpec = str | tuple[str, float]
@@ -31,10 +31,15 @@ class LinearPhaseThreeBandSplitter:
     high_taps: np.ndarray = field(repr=False)
 
     def split(self, audio: np.ndarray) -> ThreeBandSplit:
-        low = apply_fir(audio, self.low_taps)
-        high = apply_fir(audio, self.high_taps)
-        mid = np.asarray(audio, dtype=np.float64) - low - high
-        return ThreeBandSplit(low=low, mid=mid, high=high)
+        audio_2d, squeeze = _as_audio_2d(audio)
+        low = _apply_fir_2d(audio_2d, self.low_taps)
+        high = _apply_fir_2d(audio_2d, self.high_taps)
+        mid = audio_2d - low - high
+        return ThreeBandSplit(
+            low=_restore_audio_shape(low, squeeze),
+            mid=_restore_audio_shape(mid, squeeze),
+            high=_restore_audio_shape(high, squeeze),
+        )
 
 
 def _as_audio_2d(audio: np.ndarray) -> tuple[np.ndarray, bool]:
@@ -183,9 +188,20 @@ def design_linear_phase_highpass(
 
 def apply_fir(audio: np.ndarray, taps: np.ndarray) -> np.ndarray:
     audio_2d, squeeze = _as_audio_2d(audio)
-    taps = np.asarray(taps, dtype=np.float64)
-    filtered = np.vstack([fftconvolve(channel, taps, mode="same") for channel in audio_2d])
+    filtered = _apply_fir_2d(audio_2d, taps)
     return _restore_audio_shape(filtered, squeeze)
+
+
+def _apply_fir_2d(audio_2d: np.ndarray, taps: np.ndarray) -> np.ndarray:
+    """
+    Apply one FIR kernel across channel-first audio.
+
+    `scipy.signal.convolve(..., method="auto")` lets SciPy choose direct or
+    FFT convolution per shape, which is faster here than our previous explicit
+    per-channel `fftconvolve` loop while preserving deterministic output.
+    """
+    kernel = np.asarray(taps, dtype=np.float64)
+    return convolve(audio_2d, kernel[np.newaxis, :], mode="same", method="auto")
 
 
 @lru_cache(maxsize=32)

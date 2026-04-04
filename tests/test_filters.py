@@ -1,6 +1,8 @@
 import numpy as np
+from scipy.signal import fftconvolve
 
 from cognis.dsp.filters import (
+    apply_fir,
     clear_fir_design_cache,
     get_fir_design_cache_info,
     get_linear_phase_three_band_splitter,
@@ -28,6 +30,17 @@ def test_three_band_split_reconstructs_stereo_noise():
 
     assert reconstructed.shape == audio.shape
     assert np.allclose(reconstructed, audio, atol=1e-10)
+
+
+def test_apply_fir_matches_reference_fft_convolution():
+    rng = np.random.default_rng(5)
+    audio = rng.standard_normal((2, 4096))
+    taps = rng.standard_normal(257)
+
+    filtered = apply_fir(audio, taps)
+    reference = np.vstack([fftconvolve(channel, taps, mode="same") for channel in audio])
+
+    assert np.allclose(filtered, reference, atol=1e-12)
 
 
 def test_three_band_split_low_tone_lands_in_low_band():

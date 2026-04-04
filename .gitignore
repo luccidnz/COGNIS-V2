@@ -5,6 +5,7 @@ coverage/
 __pycache__/
 .pytest_cache/
 *.py[cod]
+pytest-cache-files-*/
 .DS_Store
 *.log
 .env*
