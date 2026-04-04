@@ -1,19 +1,26 @@
 import numpy as np
 
-from cognis.dsp.filters import split_linear_phase_three_band
+from cognis.dsp.filters import get_linear_phase_three_band_splitter
 
 
 class MultibandDynamics:
     LOW_CROSSOVER_HZ = 250.0
     HIGH_CROSSOVER_HZ = 4000.0
 
-    # These FIR lengths stay deterministic and offline-friendly while keeping
-    # the 250 Hz crossover tight enough to be useful for mastering decisions.
+    # These FIR lengths are long enough to keep the low crossover credible,
+    # but still bounded so repeated optimizer renders stay practical in Python.
     LOW_CROSSOVER_TAPS = 1537
     HIGH_CROSSOVER_TAPS = 513
 
     def __init__(self, sr: int):
         self.sr = sr
+        self._splitter = get_linear_phase_three_band_splitter(
+            sr,
+            self.LOW_CROSSOVER_HZ,
+            self.HIGH_CROSSOVER_HZ,
+            low_taps=self.LOW_CROSSOVER_TAPS,
+            high_taps=self.HIGH_CROSSOVER_TAPS,
+        )
 
     def _compress_band(
         self,
@@ -26,9 +33,9 @@ class MultibandDynamics:
         """
         Apply a simple feed-forward compressor driven by a mono-linked sidechain.
 
-        The attack/release values are intentionally conservative. Faster values
-        on the high band catch transients, while slower low-band timing avoids
-        obvious pumping on bass material.
+        Attack and release are intentionally conservative for mastering. Low
+        band timing stays slower to avoid bass pumping, while the high band is
+        allowed to react faster to transient detail.
         """
         if ratio <= 1.0:
             return band
@@ -58,23 +65,18 @@ class MultibandDynamics:
 
     def process(self, audio: np.ndarray, dynamics_preservation: float) -> np.ndarray:
         """
-        Apply conservative multiband compression for mastering.
+        Apply conservative multiband compression for offline mastering.
 
+        The FIR crossover remains offline-oriented: it prioritizes transparent
+        band separation and deterministic reuse over low-latency operation.
         `dynamics_preservation` maps from 0.0 (stronger control) to 1.0
-        (effectively bypass). The thresholds stay deliberately gentle because
-        this stage sits before the final limiter in the current engine.
+        (effectively bypass), and the threshold curve stays gentle because
+        this block feeds the final limiter rather than replacing it.
         """
         if dynamics_preservation >= 0.99:
             return audio
 
-        bands = split_linear_phase_three_band(
-            audio,
-            self.LOW_CROSSOVER_HZ,
-            self.HIGH_CROSSOVER_HZ,
-            self.sr,
-            low_taps=self.LOW_CROSSOVER_TAPS,
-            high_taps=self.HIGH_CROSSOVER_TAPS,
-        )
+        bands = self._splitter.split(audio)
 
         compression_amount = 1.0 - float(np.clip(dynamics_preservation, 0.0, 1.0))
         ratio = 1.0 + 2.5 * compression_amount
