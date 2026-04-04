@@ -42,12 +42,12 @@ python -m cognis.cli input.wav output.wav --mode STREAMING_SAFE --target_loudnes
 
 ## Known Limitations
 - The BS.1770 loudness measurement is an approximation and not yet fully certification-grade.
-- The limiter is currently a static waveshaper/clipper with oversampling, not a true lookahead envelope-based limiter.
+- The limiter is an envelope-aware quasi-lookahead limiter. While better than a static waveshaper, it is not yet a multi-stage true lookahead limiter.
 - The DSP chain uses simple first/second-order Butterworth filters which introduce phase shifts.
 - The optimizer uses a small, bounded grid search for deterministic and fast MVP execution.
 
 ## Roadmap
-- Refine the Limiter and Dynamics modules (e.g., implement a true lookahead envelope-based limiter).
+- Refine the Limiter and Dynamics modules (e.g., implement a true lookahead envelope-based limiter with smarter release handling).
 - Upgrade multiband crossovers to Linkwitz-Riley or linear-phase filters.
 - Refine BS.1770 loudness measurement to full compliance.
 - Integrate C++20 DSP core via pybind11.

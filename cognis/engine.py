@@ -71,6 +71,11 @@ class Engine:
         else:
             trim_gain_db = -6.0 - input_tp
             trimmed_lufs = input_lufs + trim_gain_db
+            
+            # Assumption: EQ and Dynamics will not drastically alter the overall LUFS.
+            # We compute a static makeup gain here to hit the target loudness before the limiter.
+            # In Phase 2, this could be a dynamic parameter searched by the optimizer, 
+            # or computed dynamically after the EQ/Dynamics stages.
             makeup_gain_db = config.target_loudness - trimmed_lufs
             
         # 2. Build targets
