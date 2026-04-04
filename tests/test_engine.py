@@ -27,3 +27,30 @@ def test_engine_process():
     assert hasattr(report, 'integrated_loudness')
     assert recipe is not None
     assert "params" in recipe
+
+
+def test_engine_process_with_multiband_dynamics_enabled():
+    engine = Engine()
+    config = MasteringConfig(
+        mode=MasteringMode.STREAMING_SAFE,
+        target_loudness=-14.0,
+        ceiling_mode=CeilingMode.TRUE_PEAK,
+        ceiling_db=-1.0,
+        oversampling=1,
+        bass_preservation=0.9,
+        stereo_width=1.1,
+        dynamics_preservation=0.45,
+        brightness=0.1
+    )
+
+    t = np.linspace(0, 0.5, 24000, endpoint=False)
+    left = 0.45 * np.sin(2 * np.pi * 90 * t) + 0.2 * np.sin(2 * np.pi * 2200 * t)
+    right = 0.4 * np.sin(2 * np.pi * 140 * t + 0.2) + 0.15 * np.sin(2 * np.pi * 7000 * t)
+    audio = np.vstack((left, right))
+
+    mastered, report, recipe = engine.process(audio, 48000, config)
+
+    assert mastered.shape == audio.shape
+    assert np.isfinite(mastered).all()
+    assert report is not None
+    assert recipe is not None

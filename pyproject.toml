@@ -28,3 +28,5 @@ include = ["cognis*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+testpaths = ["tests"]
+norecursedirs = [".pytest_cache", "pytest-cache-files-*"]

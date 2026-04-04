@@ -15,6 +15,7 @@ The current implementation is a Phase-1 Python backbone that provides:
 - A structured configuration and schema layer.
 - An initial analyzer for loudness (approximate BS.1770), spectrum, and stereo features. Peak values are reported in dBFS.
 - A basic white-box DSP chain (EQ, dynamics, stereo control, limiter).
+- The multiband dynamics stage now uses an offline linear-phase FIR band split with exact residual reconstruction, which is materially cleaner than the earlier subtractive Butterworth MVP split.
 - An optimization layer that performs bounded searches over DSP parameters (`brightness`, `stereo_width`, `bass_preservation`, `dynamics_preservation`).
 - A CLI for running the engine on audio files.
 - Basic reporting and QC.
@@ -45,12 +46,13 @@ python -m cognis.cli input.wav output.wav --mode STREAMING_SAFE --target_loudnes
 ## Known Limitations
 - The BS.1770 loudness measurement is an approximation and not yet fully certification-grade.
 - The limiter is an envelope-aware quasi-lookahead limiter. While better than a static waveshaper, it is not yet a multi-stage true lookahead limiter.
-- The DSP chain uses simple first/second-order Butterworth filters which introduce phase shifts.
+- The dynamics crossover is now more transparent, but it is still an offline Python FIR implementation with finite-kernel edge effects and no partitioned convolution acceleration yet.
+- Other DSP blocks still use simple first/second-order Butterworth filters where phase shift is acceptable for the current MVP.
 - The optimizer uses a small, bounded grid search for deterministic and fast MVP execution.
 
 ## Roadmap
 - Refine the Limiter and Dynamics modules (e.g., implement a true lookahead envelope-based limiter with smarter release handling).
-- Upgrade multiband crossovers to Linkwitz-Riley or linear-phase filters.
+- Migrate the offline FIR crossover and dynamics block to a higher-performance C++ DSP core or partitioned-convolution path.
 - Refine BS.1770 loudness measurement to full compliance.
 - Integrate C++20 DSP core via pybind11.
 - Develop ML models for style encoding and preference ranking.
