@@ -74,9 +74,14 @@ class Engine:
             
             # Assumption: EQ and Dynamics will not drastically alter the overall LUFS.
             # We compute a static makeup gain here to hit the target loudness before the limiter.
-            # In Phase 2, this could be a dynamic parameter searched by the optimizer, 
-            # or computed dynamically after the EQ/Dynamics stages.
-            makeup_gain_db = config.target_loudness - trimmed_lufs
+            raw_makeup_gain = config.target_loudness - trimmed_lufs
+            
+            # Clamp makeup gain to avoid excessive pre-limiter gain jumps.
+            # Extreme gain can cause the limiter to distort heavily or create artifacts.
+            # If the track is extremely quiet, we only boost up to +24dB max.
+            # If the track is extremely loud, we only attenuate down to -24dB max.
+            MAX_MAKEUP_GAIN = 24.0
+            makeup_gain_db = float(np.clip(raw_makeup_gain, -MAX_MAKEUP_GAIN, MAX_MAKEUP_GAIN))
             
         # 2. Build targets
         targets = build_targets(config)

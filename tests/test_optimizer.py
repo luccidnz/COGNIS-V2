@@ -9,7 +9,9 @@ def test_optimizer_returns_params():
         target_loudness=-14.0,
         ceiling_db=-1.0,
         target_tilt=0.0,
-        target_width=1.0
+        target_width=1.0,
+        target_crest_factor=9.0,
+        target_low_band_width=0.0
     )
     
     audio = np.random.randn(2, 4800).astype(np.float32) * 0.1

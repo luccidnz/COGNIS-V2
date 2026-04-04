@@ -25,3 +25,6 @@ cognis = "cognis.cli:main"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["cognis*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

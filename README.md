@@ -33,6 +33,8 @@ Run the test suite from the repository root:
 pytest -q
 ```
 
+*Note: The `pyproject.toml` includes a `pythonpath = ["."]` configuration. This is intentional and allows you to run `pytest` directly from a fresh checkout without needing to run `pip install -e .` first.*
+
 ## How to Run the CLI
 
 Process an audio file using the CLI:

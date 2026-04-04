@@ -24,8 +24,9 @@ def compute_objective(analysis: AnalysisResult, targets: TargetValues) -> float:
         score += abs(analysis.stereo.phase_correlation) * 5000.0
         
     # 3. Low-band Width Constraint
-    # Bass should remain relatively mono (e.g., width < 0.3)
-    lb_width_violation = max(0.0, analysis.stereo.low_band_width - 0.3)
+    # Bass should remain relatively mono, guided by target_low_band_width
+    # Add a small tolerance (e.g., 0.1) to avoid over-penalizing slight widening
+    lb_width_violation = max(0.0, analysis.stereo.low_band_width - (targets.target_low_band_width + 0.1))
     score += lb_width_violation * 5000.0
 
     # ==========================================
@@ -55,10 +56,8 @@ def compute_objective(analysis: AnalysisResult, targets: TargetValues) -> float:
     
     # 5. Crest-Factor / Dynamics Penalty
     # Penalize over-compression (crest factor getting too small)
-    # Assuming a safe crest factor target of around 8-10 dB for a master
-    target_crest_factor = 9.0
-    if analysis.loudness.crest_factor < target_crest_factor:
-        crest_diff = target_crest_factor - analysis.loudness.crest_factor
+    if analysis.loudness.crest_factor < targets.target_crest_factor:
+        crest_diff = targets.target_crest_factor - analysis.loudness.crest_factor
         score += crest_diff * 15.0
     
     # 6. Width Penalty
