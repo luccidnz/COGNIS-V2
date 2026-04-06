@@ -70,7 +70,7 @@ def test_apply_fir_backends_are_equivalent_long_signal():
     assert np.allclose(auto_out, fft_out, atol=1e-12)
 
 def test_auto_backend_heuristic():
-    from cognis.dsp.filters import _choose_backend_method
+    from cognis.dsp.fir_executor import _choose_backend_method
     # Signal with NaN should fallback to direct
     assert _choose_backend_method(48000, 1025, 2, has_nan_inf=True) == "direct"
 
