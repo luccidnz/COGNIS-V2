@@ -1,5 +1,5 @@
 import numpy as np
-from cognis.dsp.filters import apply_lowpass, apply_highpass
+from cognis.dsp.filters import apply_lowpass
 
 class EQ:
     def __init__(self, sr: int):
