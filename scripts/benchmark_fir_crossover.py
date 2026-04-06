@@ -33,8 +33,13 @@ def run_benchmark_for_signal(label: str, audio: np.ndarray, splitter, is_short: 
     )
     optimized_low = _benchmark("apply_fir(low band, backend=AUTO)", lambda: apply_fir(audio, splitter.low_taps, backend=FirBackend.AUTO), iterations=25)
 
+    from cognis.dsp.fir_executor import _NATIVE_FIR_AVAILABLE
+
     repeated_split_auto = _benchmark("splitter.split(audio, backend=AUTO)", lambda: splitter.split(audio, backend=FirBackend.AUTO), iterations=25)
-    repeated_split_fft = _benchmark("splitter.split(audio, backend=FFT)", lambda: splitter.split(audio, backend=FirBackend.FFT), iterations=25)
+    if _NATIVE_FIR_AVAILABLE:
+        repeated_split_fft = _benchmark("splitter.split(audio, backend=FFT) [Native]", lambda: splitter.split(audio, backend=FirBackend.FFT), iterations=25)
+    else:
+        repeated_split_fft = _benchmark("splitter.split(audio, backend=FFT) [Python]", lambda: splitter.split(audio, backend=FirBackend.FFT), iterations=25)
     repeated_split_partitioned = _benchmark("splitter.split(audio, backend=PARTITIONED)", lambda: splitter.split(audio, backend=FirBackend.PARTITIONED), iterations=25)
 
     # Direct is extremely slow for long signals and long taps. Only run if it's short, or a very small number of iterations.

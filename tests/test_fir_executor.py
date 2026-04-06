@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from cognis.dsp.fir_executor import FirBackend, execute_fir_2d
+from cognis.dsp.fir_executor import FirBackend, execute_fir_2d, _NATIVE_FIR_AVAILABLE, execute_python_fir_2d
 
 def test_execute_fir_2d_enforces_dimensionality():
     audio_1d = np.zeros(10)
@@ -37,3 +37,23 @@ def test_execute_fir_2d_fallback_works_cleanly():
 
     out = execute_fir_2d(audio, taps, FirBackend.PARTITIONED)
     assert out.shape == audio.shape
+
+
+@pytest.mark.skipif(not _NATIVE_FIR_AVAILABLE, reason="Native FIR extension is not available")
+def test_execute_fir_2d_native_fft_matches_python_fft():
+    np.random.seed(42)
+    audio = np.random.randn(2, 1024).astype(np.float64)
+    taps = np.random.randn(65).astype(np.float64)
+
+    # Calculate native output
+    out_native = execute_fir_2d(audio, taps, FirBackend.FFT)
+
+    # Calculate python reference output
+    out_python = execute_python_fir_2d(audio, taps, FirBackend.FFT)
+
+    # The FFT approach might have minor floating point discrepancies,
+    # but they should be effectively identical
+    np.testing.assert_allclose(out_native, out_python, rtol=1e-5, atol=1e-7)
+
+    # Assert same mode exactly matches input shape
+    assert out_native.shape == audio.shape

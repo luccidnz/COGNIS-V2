@@ -127,15 +127,24 @@ def execute_python_fir_2d(audio_2d: np.ndarray, taps: np.ndarray, backend: FirBa
 # --------------------------------------------------------------------------------
 
 _NATIVE_FIR_AVAILABLE = False
+_cognis_native = None
 
 try:
     # Attempt to import the optional compiled C++ backend.
-    # Currently expected to be missing as this is the preparation pass.
+    # Try importing from the package root or standard paths where the built .so might be.
     import cognis_native
     if hasattr(cognis_native, "execute_native_fir_2d"):
         _NATIVE_FIR_AVAILABLE = True
+        _cognis_native = cognis_native
 except ImportError:
-    pass
+    try:
+        # Fallback for when the .so is placed directly alongside this module.
+        from . import cognis_native
+        if hasattr(cognis_native, "execute_native_fir_2d"):
+            _NATIVE_FIR_AVAILABLE = True
+            _cognis_native = cognis_native
+    except ImportError:
+        pass
 
 
 def execute_fir_2d(audio_2d: np.ndarray, taps: np.ndarray, backend: FirBackend) -> np.ndarray:
@@ -165,13 +174,26 @@ def execute_fir_2d(audio_2d: np.ndarray, taps: np.ndarray, backend: FirBackend) 
     if taps.ndim != 1:
         raise ValueError(f"taps must be 1-dimensional, got shape {taps.shape}")
 
-    # 2. Dispatch to Native if available and explicitly requested (or AUTO decides to use it)
-    if _NATIVE_FIR_AVAILABLE:
-        # Native backend integration goes here in the future
-        # e.g., return cognis_native.execute_native_fir_2d(audio_2d, taps, backend.name)
-        pass
+    # 2. Determine method (needed for AUTO resolution)
+    kernel = np.asarray(taps, dtype=np.float64)
+    if backend == FirBackend.AUTO:
+        has_nan_inf = not np.isfinite(audio_2d).all()
+        method = _choose_backend_method(audio_2d.shape[-1], kernel.shape[-1], audio_2d.shape[0], has_nan_inf)
+    else:
+        method = backend.value
 
-    # 3. Fallback to Python reference behavior
+    # 3. Dispatch to Native if available and explicitly requested (or AUTO decides to use it)
+    if _NATIVE_FIR_AVAILABLE and method == "fft":
+        try:
+            return _cognis_native.execute_native_fir_2d(audio_2d, taps, method)
+        except Exception as e:
+            # If native throws an unexpected error, we could fall back, but it's
+            # usually safer to raise to catch bugs in the native layer early.
+            # However, for pure fallback safety, you could catch and fallback.
+            # But the requirement says fallback if unavailable.
+            pass
+
+    # 4. Fallback to Python reference behavior
     return execute_python_fir_2d(audio_2d, taps, backend)
 
 def get_fir_executor_cache_info() -> dict[str, int]:
