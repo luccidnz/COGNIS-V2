@@ -29,7 +29,8 @@ def main():
         bass_preservation=1.0,
         stereo_width=1.0,
         dynamics_preservation=1.0,
-        brightness=0.0
+        brightness=0.0,
+        fir_backend="AUTO"
     )
     
     print(f"Loading {args.input}...")

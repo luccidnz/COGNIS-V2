@@ -1,6 +1,6 @@
 import numpy as np
 
-from cognis.dsp.filters import get_linear_phase_three_band_splitter
+from cognis.dsp.filters import FirBackend, get_linear_phase_three_band_splitter
 
 
 class MultibandDynamics:
@@ -12,8 +12,9 @@ class MultibandDynamics:
     LOW_CROSSOVER_TAPS = 1537
     HIGH_CROSSOVER_TAPS = 513
 
-    def __init__(self, sr: int):
+    def __init__(self, sr: int, backend: str = "AUTO"):
         self.sr = sr
+        self.backend = FirBackend(backend.lower())
         self._splitter = get_linear_phase_three_band_splitter(
             sr,
             self.LOW_CROSSOVER_HZ,
@@ -76,7 +77,7 @@ class MultibandDynamics:
         if dynamics_preservation >= 0.99:
             return audio
 
-        bands = self._splitter.split(audio)
+        bands = self._splitter.split(audio, backend=self.backend)
 
         compression_amount = 1.0 - float(np.clip(dynamics_preservation, 0.0, 1.0))
         ratio = 1.0 + 2.5 * compression_amount

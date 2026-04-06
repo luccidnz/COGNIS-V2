@@ -18,7 +18,7 @@ class Engine:
         """Execute the DSP chain."""
         # Instantiate DSP modules
         eq = EQ(sr)
-        dynamics = MultibandDynamics(sr)
+        dynamics = MultibandDynamics(sr, backend=config.fir_backend)
         stereo = StereoControl(sr)
         limiter = Limiter(sr)
         

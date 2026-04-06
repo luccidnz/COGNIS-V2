@@ -208,13 +208,25 @@ def apply_fir(audio: np.ndarray, taps: np.ndarray, backend: FirBackend = FirBack
     return _restore_audio_shape(filtered, squeeze)
 
 
+def _choose_backend_method(signal_len: int, kernel_len: int, channels: int) -> str:
+    """
+    Simple heuristic for choosing convolution method if backend is AUTO.
+
+    Direct convolution is only faster for very short signals and short kernels.
+    For typical mastering workloads (e.g. 44.1kHz audio blocks) and FIR kernels
+    of 500+ taps, FFT is vastly superior.
+    We choose direct if signal length + kernel length is under a conservative threshold.
+    """
+    if signal_len < 1024 and kernel_len < 128:
+        return "direct"
+    return "fft"
+
 def _apply_fir_2d(audio_2d: np.ndarray, taps: np.ndarray, backend: FirBackend) -> np.ndarray:
     """
     Apply one FIR kernel across channel-first audio using the selected backend.
 
-    `scipy.signal.convolve(..., method="auto")` lets SciPy choose direct or
-    FFT convolution per shape, which is faster here than our previous explicit
-    per-channel `fftconvolve` loop while preserving deterministic output.
+    If backend is AUTO, we explicitly decide between 'direct' and 'fft'
+    using a deterministic heuristic based on signal and kernel lengths.
     """
     if backend == FirBackend.PARTITIONED:
         # TODO: Implement partitioned convolution backend.
@@ -223,7 +235,13 @@ def _apply_fir_2d(audio_2d: np.ndarray, taps: np.ndarray, backend: FirBackend) -
         raise NotImplementedError("Partitioned convolution backend not yet implemented.")
 
     kernel = np.asarray(taps, dtype=np.float64)
-    return convolve(audio_2d, kernel[np.newaxis, :], mode="same", method=backend.value)
+
+    if backend == FirBackend.AUTO:
+        method = _choose_backend_method(audio_2d.shape[-1], kernel.shape[-1], audio_2d.shape[0])
+    else:
+        method = backend.value
+
+    return convolve(audio_2d, kernel[np.newaxis, :], mode="same", method=method)
 
 
 @lru_cache(maxsize=32)
