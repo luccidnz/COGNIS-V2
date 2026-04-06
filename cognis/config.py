@@ -27,8 +27,11 @@ class MasteringConfig:
     dynamics_preservation: float
     brightness: float
     reference_path: Optional[str] = None
+    fir_backend: str = "AUTO"
 
     def __post_init__(self):
+        if self.fir_backend not in ("AUTO", "DIRECT", "FFT", "PARTITIONED"):
+            raise ValueError("fir_backend must be AUTO, DIRECT, FFT, or PARTITIONED")
         if self.oversampling not in (1, 2, 4, 8):
             raise ValueError("oversampling must be 1, 2, 4, or 8")
         if self.ceiling_db >= 0:

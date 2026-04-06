@@ -59,6 +59,31 @@ def test_apply_fir_backends_are_equivalent():
     assert np.allclose(auto_out, fft_out, atol=1e-12)
 
 
+def test_apply_fir_backends_are_equivalent_long_signal():
+    rng = np.random.default_rng(6)
+    audio = rng.standard_normal((2, 48000))
+    taps = rng.standard_normal(1025)
+
+    auto_out = apply_fir(audio, taps, backend=FirBackend.AUTO)
+    fft_out = apply_fir(audio, taps, backend=FirBackend.FFT)
+
+    assert np.allclose(auto_out, fft_out, atol=1e-12)
+
+def test_auto_backend_heuristic():
+    from cognis.dsp.filters import _choose_backend_method
+    # Short signal, short kernel
+    assert _choose_backend_method(512, 64, 2) == "direct"
+
+    # Long signal, short kernel
+    assert _choose_backend_method(4096, 64, 2) == "fft"
+
+    # Short signal, long kernel
+    assert _choose_backend_method(512, 256, 2) == "fft"
+
+    # Long signal, long kernel
+    assert _choose_backend_method(48000, 1025, 2) == "fft"
+
+
 def test_partitioned_backend_raises_not_implemented():
     rng = np.random.default_rng(8)
     audio = rng.standard_normal((2, 4096))

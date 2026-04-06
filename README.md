@@ -38,10 +38,18 @@ pytest -q
 
 For a lightweight FIR crossover validation/benchmark, run:
 ```bash
-python scripts/benchmark_fir_crossover.py
+python -m scripts.benchmark_fir_crossover
 ```
 
-The benchmark reports cold splitter build time, cached lookup overhead, the optimized FIR execution path, a reference per-channel FFT path, and repeated split timings.
+The benchmark reports cold splitter build time, cached lookup overhead, the optimized FIR execution path, a reference per-channel FFT path, and repeated split timings across short and long signals.
+
+## FIR Backend Options
+
+The `fir_backend` configuration in `MasteringConfig` selects how FIR crossovers execute:
+- **`AUTO` (default)**: Dynamically chooses between `DIRECT` and `FFT` convolution. If `signal_length + kernel_length` is extremely short (e.g. `signal < 1024` and `kernel < 128`), it will use `DIRECT`, otherwise it will use `FFT`. For mastering block sizes, this correctly defaults to the much faster `FFT` path.
+- **`FFT`**: Forces `method="fft"`, using fast convolution.
+- **`DIRECT`**: Forces `method="direct"`. Very slow on long kernels; kept for verification.
+- **`PARTITIONED`**: Hook point for future zero-latency/compiled execution. Currently raises `NotImplementedError`.
 
 ## How to Run the CLI
 
@@ -53,7 +61,7 @@ python -m cognis.cli input.wav output.wav --mode STREAMING_SAFE --target_loudnes
 ## Known Limitations
 - The BS.1770 loudness measurement is an approximation and not yet fully certification-grade.
 - The limiter is an envelope-aware quasi-lookahead limiter. While better than a static waveshaper, it is not yet a multi-stage true lookahead limiter.
-- The dynamics crossover is now cached, uses a faster adaptive SciPy convolution path, and is better validated, but it is still an offline Python FIR implementation with finite-kernel edge effects and no compiled or partitioned-convolution backend yet.
+- The dynamics crossover is now cached, uses an explicit convolution backend path (`AUTO`, `FFT`, `DIRECT`), and is better validated, but it is still an offline Python FIR implementation with finite-kernel edge effects. A `PARTITIONED` backend is defined as a hook point for future compiled implementation but is currently unimplemented.
 - Other DSP blocks still use simple first/second-order Butterworth filters where phase shift is acceptable for the current MVP.
 - The optimizer uses a small, bounded grid search for deterministic and fast MVP execution.
 
