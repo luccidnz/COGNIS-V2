@@ -1,7 +1,10 @@
 import numpy as np
 from scipy.signal import fftconvolve
 
+import pytest
+
 from cognis.dsp.filters import (
+    FirBackend,
     apply_fir,
     clear_fir_design_cache,
     get_fir_design_cache_info,
@@ -41,6 +44,28 @@ def test_apply_fir_matches_reference_fft_convolution():
     reference = np.vstack([fftconvolve(channel, taps, mode="same") for channel in audio])
 
     assert np.allclose(filtered, reference, atol=1e-12)
+
+
+def test_apply_fir_backends_are_equivalent():
+    rng = np.random.default_rng(6)
+    audio = rng.standard_normal((2, 4096))
+    taps = rng.standard_normal(257)
+
+    auto_out = apply_fir(audio, taps, backend=FirBackend.AUTO)
+    direct_out = apply_fir(audio, taps, backend=FirBackend.DIRECT)
+    fft_out = apply_fir(audio, taps, backend=FirBackend.FFT)
+
+    assert np.allclose(auto_out, direct_out, atol=1e-12)
+    assert np.allclose(auto_out, fft_out, atol=1e-12)
+
+
+def test_partitioned_backend_raises_not_implemented():
+    rng = np.random.default_rng(8)
+    audio = rng.standard_normal((2, 4096))
+    taps = rng.standard_normal(257)
+
+    with pytest.raises(NotImplementedError, match="Partitioned convolution backend not yet implemented."):
+        apply_fir(audio, taps, backend=FirBackend.PARTITIONED)
 
 
 def test_three_band_split_low_tone_lands_in_low_band():
