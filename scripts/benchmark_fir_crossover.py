@@ -4,6 +4,7 @@ import numpy as np
 from scipy.signal import fftconvolve
 
 from cognis.dsp.filters import (
+    FirBackend,
     apply_fir,
     clear_fir_design_cache,
     get_fir_design_cache_info,
@@ -60,7 +61,10 @@ def main() -> None:
         iterations=25,
     )
     optimized_low = _benchmark("apply_fir(low band)", lambda: apply_fir(audio, splitter.low_taps), iterations=25)
-    repeated_split = _benchmark("splitter.split(audio)", lambda: splitter.split(audio), iterations=25)
+    repeated_split_auto = _benchmark("splitter.split(audio, backend=AUTO)", lambda: splitter.split(audio, backend=FirBackend.AUTO), iterations=25)
+    repeated_split_direct = _benchmark("splitter.split(audio, backend=DIRECT)", lambda: splitter.split(audio, backend=FirBackend.DIRECT), iterations=25)
+    repeated_split_fft = _benchmark("splitter.split(audio, backend=FFT)", lambda: splitter.split(audio, backend=FirBackend.FFT), iterations=25)
+
     wrapper_split = _benchmark(
         "split_linear_phase_three_band(audio, ...)",
         lambda: split_linear_phase_three_band(
@@ -77,8 +81,10 @@ def main() -> None:
     cache_info = get_fir_design_cache_info()
     print(f"cache info: {cache_info}")
     print(f"apply_fir vs reference fft ratio: {optimized_low / reference_low:.4f}")
-    print(f"cached lookup vs direct split ratio: {warm_lookup / repeated_split:.4f}")
-    print(f"wrapper split vs direct split ratio: {wrapper_split / repeated_split:.4f}")
+    print(f"cached lookup vs AUTO split ratio: {warm_lookup / repeated_split_auto:.4f}")
+    print(f"wrapper split vs AUTO split ratio: {wrapper_split / repeated_split_auto:.4f}")
+    print(f"FFT split vs DIRECT split ratio: {repeated_split_fft / repeated_split_direct:.4f}")
+    print(f"AUTO split vs FFT split ratio: {repeated_split_auto / repeated_split_fft:.4f}")
 
 
 if __name__ == "__main__":

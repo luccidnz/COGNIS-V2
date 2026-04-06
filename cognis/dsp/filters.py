@@ -1,8 +1,24 @@
 from dataclasses import dataclass, field
+from enum import Enum
 from functools import lru_cache
 
 import numpy as np
 from scipy.signal import butter, convolve, firwin, sosfilt
+
+
+class FirBackend(Enum):
+    """
+    Execution backend for FIR crossover application.
+
+    AUTO: Uses scipy.signal.convolve(method="auto") for fastest general path.
+    DIRECT: Forces direct convolution (method="direct").
+    FFT: Forces FFT-based convolution (method="fft").
+    PARTITIONED: Placeholder for future real-time/compiled partitioned convolution.
+    """
+    AUTO = "auto"
+    DIRECT = "direct"
+    FFT = "fft"
+    PARTITIONED = "partitioned"
 
 
 WindowSpec = str | tuple[str, float]
@@ -30,10 +46,10 @@ class LinearPhaseThreeBandSplitter:
     low_taps: np.ndarray = field(repr=False)
     high_taps: np.ndarray = field(repr=False)
 
-    def split(self, audio: np.ndarray) -> ThreeBandSplit:
+    def split(self, audio: np.ndarray, backend: FirBackend = FirBackend.AUTO) -> ThreeBandSplit:
         audio_2d, squeeze = _as_audio_2d(audio)
-        low = _apply_fir_2d(audio_2d, self.low_taps)
-        high = _apply_fir_2d(audio_2d, self.high_taps)
+        low = _apply_fir_2d(audio_2d, self.low_taps, backend)
+        high = _apply_fir_2d(audio_2d, self.high_taps, backend)
         mid = audio_2d - low - high
         return ThreeBandSplit(
             low=_restore_audio_shape(low, squeeze),
@@ -186,22 +202,28 @@ def design_linear_phase_highpass(
     return _design_linear_phase_fir_cached("highpass", cutoff, sr, numtaps, _normalize_window(window))
 
 
-def apply_fir(audio: np.ndarray, taps: np.ndarray) -> np.ndarray:
+def apply_fir(audio: np.ndarray, taps: np.ndarray, backend: FirBackend = FirBackend.AUTO) -> np.ndarray:
     audio_2d, squeeze = _as_audio_2d(audio)
-    filtered = _apply_fir_2d(audio_2d, taps)
+    filtered = _apply_fir_2d(audio_2d, taps, backend)
     return _restore_audio_shape(filtered, squeeze)
 
 
-def _apply_fir_2d(audio_2d: np.ndarray, taps: np.ndarray) -> np.ndarray:
+def _apply_fir_2d(audio_2d: np.ndarray, taps: np.ndarray, backend: FirBackend) -> np.ndarray:
     """
-    Apply one FIR kernel across channel-first audio.
+    Apply one FIR kernel across channel-first audio using the selected backend.
 
     `scipy.signal.convolve(..., method="auto")` lets SciPy choose direct or
     FFT convolution per shape, which is faster here than our previous explicit
     per-channel `fftconvolve` loop while preserving deterministic output.
     """
+    if backend == FirBackend.PARTITIONED:
+        # TODO: Implement partitioned convolution backend.
+        # This is a hook point for future compiled/real-time block processing
+        # where we might want zero latency or strictly bounded block sizes.
+        raise NotImplementedError("Partitioned convolution backend not yet implemented.")
+
     kernel = np.asarray(taps, dtype=np.float64)
-    return convolve(audio_2d, kernel[np.newaxis, :], mode="same", method="auto")
+    return convolve(audio_2d, kernel[np.newaxis, :], mode="same", method=backend.value)
 
 
 @lru_cache(maxsize=32)
@@ -264,6 +286,7 @@ def split_linear_phase_three_band(
     low_taps: int | None = None,
     high_taps: int | None = None,
     window: WindowSpec = ("kaiser", 8.6),
+    backend: FirBackend = FirBackend.AUTO,
 ) -> ThreeBandSplit:
     """
     Split audio into low, mid, and high bands for offline mastering work.
@@ -280,7 +303,7 @@ def split_linear_phase_three_band(
         high_taps=high_taps,
         window=window,
     )
-    return splitter.split(audio)
+    return splitter.split(audio, backend)
 
 
 def clear_fir_design_cache() -> None:
