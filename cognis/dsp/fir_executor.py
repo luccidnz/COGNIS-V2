@@ -128,6 +128,13 @@ def execute_python_fir_2d(audio_2d: np.ndarray, taps: np.ndarray, backend: FirBa
 
 _NATIVE_FIR_AVAILABLE = False
 _cognis_native = None
+_FALLBACK_ON_NATIVE_FAILURE = False
+
+_EXECUTION_INFO = {
+    "used_native": False,
+    "fallback_triggered": False,
+    "selected_method": "unknown",
+}
 
 try:
     # Attempt to import the optional compiled C++ backend.
@@ -146,6 +153,13 @@ except ImportError:
     except ImportError:
         pass
 
+
+def get_fir_execution_info() -> dict[str, str | bool]:
+    """
+    Returns observable metadata about the most recent FIR execution.
+    Useful for tests and benchmarks to prove native vs python paths.
+    """
+    return _EXECUTION_INFO.copy()
 
 def execute_fir_2d(audio_2d: np.ndarray, taps: np.ndarray, backend: FirBackend) -> np.ndarray:
     """
@@ -174,6 +188,11 @@ def execute_fir_2d(audio_2d: np.ndarray, taps: np.ndarray, backend: FirBackend) 
     if taps.ndim != 1:
         raise ValueError(f"taps must be 1-dimensional, got shape {taps.shape}")
 
+    # Reset observability state
+    _EXECUTION_INFO["used_native"] = False
+    _EXECUTION_INFO["fallback_triggered"] = False
+    _EXECUTION_INFO["selected_method"] = "unknown"
+
     # 2. Determine method (needed for AUTO resolution)
     kernel = np.asarray(taps, dtype=np.float64)
     if backend == FirBackend.AUTO:
@@ -182,16 +201,21 @@ def execute_fir_2d(audio_2d: np.ndarray, taps: np.ndarray, backend: FirBackend) 
     else:
         method = backend.value
 
+    _EXECUTION_INFO["selected_method"] = method
+
     # 3. Dispatch to Native if available and explicitly requested (or AUTO decides to use it)
     if _NATIVE_FIR_AVAILABLE and method == "fft":
         try:
-            return _cognis_native.execute_native_fir_2d(audio_2d, taps, method)
+            result = _cognis_native.execute_native_fir_2d(audio_2d, taps, method)
+            _EXECUTION_INFO["used_native"] = True
+            return result
         except Exception as e:
-            # If native throws an unexpected error, we could fall back, but it's
-            # usually safer to raise to catch bugs in the native layer early.
-            # However, for pure fallback safety, you could catch and fallback.
-            # But the requirement says fallback if unavailable.
-            pass
+            # Native runtime failure occurred
+            if _FALLBACK_ON_NATIVE_FAILURE:
+                _EXECUTION_INFO["fallback_triggered"] = True
+                # Fall through to python execution below
+            else:
+                raise RuntimeError(f"Native FIR execution failed: {e}") from e
 
     # 4. Fallback to Python reference behavior
     return execute_python_fir_2d(audio_2d, taps, backend)

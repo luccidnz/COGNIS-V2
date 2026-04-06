@@ -67,11 +67,14 @@ python -m cognis.cli input.wav output.wav --mode STREAMING_SAFE --target_loudnes
 
 ## Native Backend Support
 The repository includes an optional high-performance C++ DSP core via `pybind11` (`cpp/` directory).
-- The Python FIR implementations in `fir_executor.py` remain the absolute behavioral reference.
-- The native module currently implements the `FFT` FIR execution backend.
-- The native module is strictly optional and loaded dynamically via an internal adapter layer. Normal pure-Python installation and workflows will not require compilation.
+- **Optionality:** Normal pure-Python installation and workflows will not require compilation.
+- **Reference Spec:** The Python implementations in `fir_executor.py` remain the absolute behavioral reference. Native implementations must prove equivalence.
+- **Fallback Behavior:** If the native module is absent, the execution safely falls back to Python. If the native module is present but an unsupported backend mode is selected (e.g. `PARTITIONED` natively), it explicitly falls back to Python.
+- **Error Handling:** If the native runtime fails unexpectedly, it will throw an explicit `RuntimeError`. Silent failure swallowing is off by default to maintain deterministic trust.
+- **Compile Flags:** The native module strictly avoids aggressive non-deterministic compiler optimizations (like `-ffast-math`) by default to ensure DSP correctness.
+- **Validation:** You can run `scripts/validate_native.sh` to build, test, and benchmark the native integration pipeline explicitly.
 
-To build the optional native module, run:
+To build the optional native module manually, run:
 ```bash
 mkdir -p cpp/build
 cd cpp/build

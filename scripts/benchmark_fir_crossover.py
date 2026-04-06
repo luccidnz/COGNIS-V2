@@ -31,15 +31,32 @@ def run_benchmark_for_signal(label: str, audio: np.ndarray, splitter, is_short: 
         lambda: np.vstack([fftconvolve(channel, splitter.low_taps, mode="same") for channel in audio]),
         iterations=25,
     )
-    optimized_low = _benchmark("apply_fir(low band, backend=AUTO)", lambda: apply_fir(audio, splitter.low_taps, backend=FirBackend.AUTO), iterations=25)
+    from cognis.dsp.fir_executor import _NATIVE_FIR_AVAILABLE, get_fir_execution_info
 
-    from cognis.dsp.fir_executor import _NATIVE_FIR_AVAILABLE
+    def _apply_fir_and_report_auto():
+        apply_fir(audio, splitter.low_taps, backend=FirBackend.AUTO)
+
+    optimized_low = _benchmark("apply_fir(low band, backend=AUTO)", _apply_fir_and_report_auto, iterations=25)
+    auto_info = get_fir_execution_info()
+    print(f"  -> AUTO decided on method: '{auto_info['selected_method']}' (Native? {auto_info['used_native']})")
+
 
     repeated_split_auto = _benchmark("splitter.split(audio, backend=AUTO)", lambda: splitter.split(audio, backend=FirBackend.AUTO), iterations=25)
+
+    def _run_fft_and_check():
+        splitter.split(audio, backend=FirBackend.FFT)
+        info = get_fir_execution_info()
+        return info
+
     if _NATIVE_FIR_AVAILABLE:
-        repeated_split_fft = _benchmark("splitter.split(audio, backend=FFT) [Native]", lambda: splitter.split(audio, backend=FirBackend.FFT), iterations=25)
+        repeated_split_fft = _benchmark("splitter.split(audio, backend=FFT)", _run_fft_and_check, iterations=25)
+        fft_info = _run_fft_and_check()
+        print(f"  -> FFT Backend executed natively: {fft_info['used_native']}")
     else:
-        repeated_split_fft = _benchmark("splitter.split(audio, backend=FFT) [Python]", lambda: splitter.split(audio, backend=FirBackend.FFT), iterations=25)
+        repeated_split_fft = _benchmark("splitter.split(audio, backend=FFT)", _run_fft_and_check, iterations=25)
+        fft_info = _run_fft_and_check()
+        print(f"  -> FFT Backend executed natively: {fft_info['used_native']}")
+
     repeated_split_partitioned = _benchmark("splitter.split(audio, backend=PARTITIONED)", lambda: splitter.split(audio, backend=FirBackend.PARTITIONED), iterations=25)
 
     # Direct is extremely slow for long signals and long taps. Only run if it's short, or a very small number of iterations.

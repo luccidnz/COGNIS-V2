@@ -16,4 +16,13 @@ FetchContent_MakeAvailable(pybind11)
 include_directories(include)
 
 pybind11_add_module(cognis_native src/pybind_module.cpp src/fir_executor.cpp)
-target_compile_options(cognis_native PRIVATE -O3 -ffast-math)
+
+option(COGNIS_EXPERIMENTAL_FAST_MATH "Enable aggressive floating point optimizations (risks determinism)" OFF)
+
+if(COGNIS_EXPERIMENTAL_FAST_MATH)
+    target_compile_options(cognis_native PRIVATE -O3 -ffast-math)
+    message(STATUS "COGNIS_EXPERIMENTAL_FAST_MATH is ON. Build is not strictly deterministic.")
+else()
+    target_compile_options(cognis_native PRIVATE -O3)
+    message(STATUS "COGNIS_EXPERIMENTAL_FAST_MATH is OFF. Using deterministic DSP compiler flags.")
+endif()
