@@ -1,24 +1,15 @@
 from dataclasses import dataclass, field
-from enum import Enum
 from functools import lru_cache
 
 import numpy as np
-from scipy.signal import butter, convolve, firwin, sosfilt
+from scipy.signal import butter, firwin, sosfilt
 
-
-class FirBackend(Enum):
-    """
-    Execution backend for FIR crossover application.
-
-    AUTO: Uses scipy.signal.convolve(method="auto") for fastest general path.
-    DIRECT: Forces direct convolution (method="direct").
-    FFT: Forces FFT-based convolution (method="fft").
-    PARTITIONED: Placeholder for future real-time/compiled partitioned convolution.
-    """
-    AUTO = "auto"
-    DIRECT = "direct"
-    FFT = "fft"
-    PARTITIONED = "partitioned"
+from cognis.dsp.fir_executor import (
+    FirBackend,
+    execute_fir_2d,
+    get_fir_executor_cache_info,
+    clear_fir_executor_cache,
+)
 
 
 WindowSpec = str | tuple[str, float]
@@ -48,8 +39,8 @@ class LinearPhaseThreeBandSplitter:
 
     def split(self, audio: np.ndarray, backend: FirBackend = FirBackend.AUTO) -> ThreeBandSplit:
         audio_2d, squeeze = _as_audio_2d(audio)
-        low = _apply_fir_2d(audio_2d, self.low_taps, backend)
-        high = _apply_fir_2d(audio_2d, self.high_taps, backend)
+        low = execute_fir_2d(audio_2d, self.low_taps, backend)
+        high = execute_fir_2d(audio_2d, self.high_taps, backend)
         mid = audio_2d - low - high
         return ThreeBandSplit(
             low=_restore_audio_shape(low, squeeze),
@@ -204,111 +195,8 @@ def design_linear_phase_highpass(
 
 def apply_fir(audio: np.ndarray, taps: np.ndarray, backend: FirBackend = FirBackend.AUTO) -> np.ndarray:
     audio_2d, squeeze = _as_audio_2d(audio)
-    filtered = _apply_fir_2d(audio_2d, taps, backend)
+    filtered = execute_fir_2d(audio_2d, taps, backend)
     return _restore_audio_shape(filtered, squeeze)
-
-
-def _choose_backend_method(signal_len: int, kernel_len: int, channels: int, has_nan_inf: bool = False) -> str:
-    """
-    Explicit, benchmark-backed heuristic for choosing convolution method if backend is AUTO.
-    """
-    if has_nan_inf:
-        # FFT paths spread NaNs/Infs across the entire block. Direct convolution localizes them.
-        return "direct"
-
-    # Direct convolution is only faster for extremely short signals and short kernels.
-    if signal_len < 1024 and kernel_len < 128:
-        return "direct"
-
-    # For long signals and substantial kernels, PARTITIONED is memory-efficient,
-    # benefits from kernel FFT caching, and serves as our offline reference.
-    if signal_len > 16384 and kernel_len >= 256:
-        return "partitioned"
-
-    # For intermediate lengths, a single monolithic FFT is generally fastest.
-    return "fft"
-
-
-@lru_cache(maxsize=128)
-def _get_rfft_kernel_cached(taps_bytes: bytes, N: int, dtype: np.dtype) -> np.ndarray:
-    from scipy.fft import rfft
-    taps = np.frombuffer(taps_bytes, dtype=dtype)
-    return rfft(taps, n=N)
-
-def _get_rfft_kernel(taps: np.ndarray, N: int) -> np.ndarray:
-    return _get_rfft_kernel_cached(taps.tobytes(), N, taps.dtype)
-
-
-def _apply_partitioned_fir_2d(audio_2d: np.ndarray, taps: np.ndarray) -> np.ndarray:
-    """
-    Uniform overlap-save partitioned convolution.
-    Serves as the explicit Python reference for future compiled C++ implementations.
-    """
-    from scipy.fft import next_fast_len, rfft, irfft
-
-    channels, signal_len = audio_2d.shape
-    kernel_len = taps.shape[0]
-
-    # 1. Choose sensible fixed partition size
-    partition_size = 4096
-
-    # 2. Determine optimal FFT size (N >= partition_size + kernel_len - 1)
-    N = next_fast_len(partition_size + kernel_len - 1)
-
-    # Block step size
-    step = N - kernel_len + 1
-
-    # 3. Calculate padding to preserve exact mode="same" semantics
-    shift = (kernel_len - 1) // 2
-    pad_start = shift
-
-    num_blocks = (signal_len + step - 1) // step
-    pad_end = num_blocks * step + kernel_len - 1 - signal_len - pad_start
-
-    # 4. Pad input signal
-    padded_audio = np.pad(audio_2d, ((0, 0), (pad_start, pad_end)), mode="constant")
-
-    # 5. Output buffer
-    out = np.zeros((channels, num_blocks * step), dtype=np.float64)
-
-    # 6. Retrieve/Compute cached kernel FFT
-    H = _get_rfft_kernel(taps, N)
-
-    # 7. Overlap-save block processing loop
-    for b in range(num_blocks):
-        start_idx = b * step
-        end_idx = start_idx + N
-
-        block = padded_audio[:, start_idx:end_idx]
-        block_fft = rfft(block, n=N, axis=-1)
-
-        out_fft = block_fft * H
-        out_block = irfft(out_fft, n=N, axis=-1)
-
-        # Discard the first (kernel_len - 1) circular convolution wrap-around samples
-        valid_part = out_block[:, kernel_len - 1:]
-        out[:, b * step : (b + 1) * step] = valid_part
-
-    # 8. Truncate exactly to original signal length
-    return out[:, :signal_len]
-
-
-def _apply_fir_2d(audio_2d: np.ndarray, taps: np.ndarray, backend: FirBackend) -> np.ndarray:
-    """
-    Apply one FIR kernel across channel-first audio using the selected backend.
-    """
-    kernel = np.asarray(taps, dtype=np.float64)
-
-    if backend == FirBackend.AUTO:
-        has_nan_inf = not np.isfinite(audio_2d).all()
-        method = _choose_backend_method(audio_2d.shape[-1], kernel.shape[-1], audio_2d.shape[0], has_nan_inf)
-    else:
-        method = backend.value
-
-    if method == "partitioned":
-        return _apply_partitioned_fir_2d(audio_2d, kernel)
-
-    return convolve(audio_2d, kernel[np.newaxis, :], mode="same", method=method)
 
 
 @lru_cache(maxsize=32)
@@ -394,12 +282,12 @@ def split_linear_phase_three_band(
 def clear_fir_design_cache() -> None:
     _get_linear_phase_three_band_splitter_cached.cache_clear()
     _design_linear_phase_fir_cached.cache_clear()
-    _get_rfft_kernel_cached.cache_clear()
+    clear_fir_executor_cache()
 
 
 def get_fir_design_cache_info() -> dict[str, dict[str, int]]:
     return {
         "splitter": _cache_info_dict(_get_linear_phase_three_band_splitter_cached.cache_info()),
         "fir": _cache_info_dict(_design_linear_phase_fir_cached.cache_info()),
-        "kernel_fft": _cache_info_dict(_get_rfft_kernel_cached.cache_info()),
+        "kernel_fft": get_fir_executor_cache_info(),
     }
