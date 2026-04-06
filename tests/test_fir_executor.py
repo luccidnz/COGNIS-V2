@@ -1,7 +1,8 @@
 import numpy as np
 import pytest
 
-from cognis.dsp.fir_executor import FirBackend, execute_fir_2d, _NATIVE_FIR_AVAILABLE, execute_python_fir_2d
+from cognis.dsp.fir_executor import FirBackend, execute_fir_2d, _NATIVE_FIR_AVAILABLE, execute_python_fir_2d, get_fir_execution_info
+import cognis.dsp.fir_executor as fir_exec_mod
 
 def test_execute_fir_2d_enforces_dimensionality():
     audio_1d = np.zeros(10)
@@ -38,6 +39,43 @@ def test_execute_fir_2d_fallback_works_cleanly():
     out = execute_fir_2d(audio, taps, FirBackend.PARTITIONED)
     assert out.shape == audio.shape
 
+    info = get_fir_execution_info()
+    assert info["used_native"] is False
+    assert info["selected_method"] == "partitioned"
+
+@pytest.mark.skipif(not _NATIVE_FIR_AVAILABLE, reason="Native FIR extension is not available")
+def test_execute_fir_2d_observability_and_native_execution():
+    audio = np.random.randn(2, 1024).astype(np.float64)
+    taps = np.random.randn(65).astype(np.float64)
+
+    # Force native FFT
+    out = execute_fir_2d(audio, taps, FirBackend.FFT)
+    info = get_fir_execution_info()
+    assert info["used_native"] is True
+    assert info["fallback_triggered"] is False
+    assert info["selected_method"] == "fft"
+
+@pytest.mark.skipif(not _NATIVE_FIR_AVAILABLE, reason="Native FIR extension is not available")
+def test_execute_fir_2d_native_failure_semantics():
+    # We can trigger a native failure by passing an unsupported method to the native layer.
+    # Actually, the python layer protects against this.
+    # Let's temporarily inject a bad method to test the exception throwing.
+    audio = np.random.randn(2, 1024).astype(np.float64)
+    taps = np.random.randn(65).astype(np.float64)
+
+    # This shouldn't normally happen since the boundary filters it, but if Native raises an error:
+    with pytest.raises(RuntimeError, match="Native FIR execution failed"):
+        # To test the boundary logic (which wraps the native throw in a new RuntimeError),
+        # we mock the native call to throw something we can catch.
+        original_execute = fir_exec_mod._cognis_native.execute_native_fir_2d
+        def mock_execute(*args, **kwargs):
+            raise Exception("Simulated Native Crash")
+        fir_exec_mod._cognis_native.execute_native_fir_2d = mock_execute
+        try:
+            fir_exec_mod.execute_fir_2d(audio, taps, FirBackend.FFT)
+        finally:
+            fir_exec_mod._cognis_native.execute_native_fir_2d = original_execute
+
 
 @pytest.mark.skipif(not _NATIVE_FIR_AVAILABLE, reason="Native FIR extension is not available")
 def test_execute_fir_2d_native_fft_matches_python_fft():
@@ -47,6 +85,7 @@ def test_execute_fir_2d_native_fft_matches_python_fft():
 
     # Calculate native output
     out_native = execute_fir_2d(audio, taps, FirBackend.FFT)
+    assert get_fir_execution_info()["used_native"] is True
 
     # Calculate python reference output
     out_python = execute_python_fir_2d(audio, taps, FirBackend.FFT)
