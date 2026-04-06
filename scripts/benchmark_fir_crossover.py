@@ -34,6 +34,8 @@ def run_benchmark_for_signal(label: str, audio: np.ndarray, splitter, is_short: 
     optimized_low = _benchmark("apply_fir(low band, backend=AUTO)", lambda: apply_fir(audio, splitter.low_taps, backend=FirBackend.AUTO), iterations=25)
 
     repeated_split_auto = _benchmark("splitter.split(audio, backend=AUTO)", lambda: splitter.split(audio, backend=FirBackend.AUTO), iterations=25)
+    repeated_split_fft = _benchmark("splitter.split(audio, backend=FFT)", lambda: splitter.split(audio, backend=FirBackend.FFT), iterations=25)
+    repeated_split_partitioned = _benchmark("splitter.split(audio, backend=PARTITIONED)", lambda: splitter.split(audio, backend=FirBackend.PARTITIONED), iterations=25)
 
     # Direct is extremely slow for long signals and long taps. Only run if it's short, or a very small number of iterations.
     if is_short:
@@ -43,11 +45,11 @@ def run_benchmark_for_signal(label: str, audio: np.ndarray, splitter, is_short: 
         # Normalize to 25 iterations for ratio comparison
         repeated_split_direct = (repeated_split_direct / 2) * 25
 
-    repeated_split_fft = _benchmark("splitter.split(audio, backend=FFT)", lambda: splitter.split(audio, backend=FirBackend.FFT), iterations=25)
 
     print(f"apply_fir vs reference fft ratio: {optimized_low / reference_low:.4f}")
+    print(f"PARTITIONED split vs FFT split ratio: {repeated_split_partitioned / repeated_split_fft:.4f}")
     print(f"FFT split vs DIRECT split ratio: {repeated_split_fft / repeated_split_direct:.4f}")
-    print(f"AUTO split vs FFT split ratio: {repeated_split_auto / repeated_split_fft:.4f}")
+    print(f"AUTO split vs reference best possible ratio: {repeated_split_auto / min(repeated_split_partitioned, repeated_split_fft):.4f}")
 
 
 def main() -> None:

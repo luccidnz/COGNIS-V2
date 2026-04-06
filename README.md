@@ -46,10 +46,10 @@ The benchmark reports cold splitter build time, cached lookup overhead, the opti
 ## FIR Backend Options
 
 The `fir_backend` configuration in `MasteringConfig` selects how FIR crossovers execute:
-- **`AUTO` (default)**: Dynamically chooses between `DIRECT` and `FFT` convolution. If `signal_length + kernel_length` is extremely short (e.g. `signal < 1024` and `kernel < 128`), it will use `DIRECT`, otherwise it will use `FFT`. For mastering block sizes, this correctly defaults to the much faster `FFT` path.
-- **`FFT`**: Forces `method="fft"`, using fast convolution.
+- **`AUTO` (default)**: Explicitly selects the best execution strategy based on benchmark-backed heuristics. Falls back to `DIRECT` if NaNs are present to avoid block-wide spreading. Chooses `DIRECT` for exceptionally short workloads, `FFT` for intermediate lengths, and `PARTITIONED` for typical long audio where memory limits and repeated kernel evaluations matter.
+- **`PARTITIONED`**: Explicit overlap-save block convolution. For long mastering signals it divides the processing into fixed blocks and caches the real FFT of the kernel. This significantly speeds up optimizer sweeps and serves as the explicit blueprint for future compiled implementations.
+- **`FFT`**: Forces `method="fft"`, using monolithic fast convolution.
 - **`DIRECT`**: Forces `method="direct"`. Very slow on long kernels; kept for verification.
-- **`PARTITIONED`**: Hook point for future zero-latency/compiled execution. Currently raises `NotImplementedError`.
 
 ## How to Run the CLI
 
@@ -61,13 +61,13 @@ python -m cognis.cli input.wav output.wav --mode STREAMING_SAFE --target_loudnes
 ## Known Limitations
 - The BS.1770 loudness measurement is an approximation and not yet fully certification-grade.
 - The limiter is an envelope-aware quasi-lookahead limiter. While better than a static waveshaper, it is not yet a multi-stage true lookahead limiter.
-- The dynamics crossover is now cached, uses an explicit convolution backend path (`AUTO`, `FFT`, `DIRECT`), and is better validated, but it is still an offline Python FIR implementation with finite-kernel edge effects. A `PARTITIONED` backend is defined as a hook point for future compiled implementation but is currently unimplemented.
+- The dynamics crossover uses a `PARTITIONED` backend that is a robust Python overlap-save implementation. While efficient, it is still bounded by Python execution speed and represents a blueprint for a future C++ migration.
 - Other DSP blocks still use simple first/second-order Butterworth filters where phase shift is acceptable for the current MVP.
 - The optimizer uses a small, bounded grid search for deterministic and fast MVP execution.
 
 ## Roadmap
 - Refine the Limiter and Dynamics modules (e.g., implement a true lookahead envelope-based limiter with smarter release handling).
-- Migrate the offline FIR crossover and dynamics block to a higher-performance C++ DSP core or partitioned-convolution path.
+- Migrate the offline FIR crossover and dynamics block to a higher-performance C++ DSP core, mirroring the current `PARTITIONED` backend contract.
 - Refine BS.1770 loudness measurement to full compliance.
 - Integrate C++20 DSP core via pybind11.
 - Develop ML models for style encoding and preference ranking.
