@@ -65,14 +65,23 @@ python -m cognis.cli input.wav output.wav --mode STREAMING_SAFE --target_loudnes
 - Other DSP blocks still use simple first/second-order Butterworth filters where phase shift is acceptable for the current MVP.
 - The optimizer uses a small, bounded grid search for deterministic and fast MVP execution.
 
-## Native Backend Preparation
-The repository has been prepared for a future high-performance C++ DSP core via `pybind11` (`cpp/` directory).
+## Native Backend Support
+The repository includes an optional high-performance C++ DSP core via `pybind11` (`cpp/` directory).
 - The Python FIR implementations in `fir_executor.py` remain the absolute behavioral reference.
-- Any future native module is strictly optional and will be loaded dynamically via an internal adapter layer.
-- Normal pure-Python installation and workflows will not require compilation.
+- The native module currently implements the `FFT` FIR execution backend.
+- The native module is strictly optional and loaded dynamically via an internal adapter layer. Normal pure-Python installation and workflows will not require compilation.
+
+To build the optional native module, run:
+```bash
+mkdir -p cpp/build
+cd cpp/build
+cmake ..
+make
+cp cognis_native.*.so ../../cognis/dsp/
+```
 
 ## Roadmap
-- Implement the future C++ FIR executor using the prepared pybind11 scaffold.
+- Implement the `PARTITIONED` overlap-save backend in the C++ FIR executor.
 - Refine the Limiter and Dynamics modules (e.g., implement a true lookahead envelope-based limiter with smarter release handling).
 - Refine BS.1770 loudness measurement to full compliance.
 - Develop ML models for style encoding and preference ranking.
