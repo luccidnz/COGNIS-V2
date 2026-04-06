@@ -71,6 +71,9 @@ def test_apply_fir_backends_are_equivalent_long_signal():
 
 def test_auto_backend_heuristic():
     from cognis.dsp.filters import _choose_backend_method
+    # Signal with NaN should fallback to direct
+    assert _choose_backend_method(48000, 1025, 2, has_nan_inf=True) == "direct"
+
     # Short signal, short kernel
     assert _choose_backend_method(512, 64, 2) == "direct"
 
@@ -80,17 +83,24 @@ def test_auto_backend_heuristic():
     # Short signal, long kernel
     assert _choose_backend_method(512, 256, 2) == "fft"
 
-    # Long signal, long kernel
-    assert _choose_backend_method(48000, 1025, 2) == "fft"
+    # Long signal, long kernel -> goes to partitioned now
+    assert _choose_backend_method(48000, 1025, 2) == "partitioned"
+
+    # Long signal but short kernel
+    assert _choose_backend_method(48000, 64, 2) == "fft"
 
 
-def test_partitioned_backend_raises_not_implemented():
+def test_partitioned_backend_equivalent_to_fft_backend():
     rng = np.random.default_rng(8)
-    audio = rng.standard_normal((2, 4096))
-    taps = rng.standard_normal(257)
+    # Long signal to fully test block-based overlap-save overlap processing
+    audio = rng.standard_normal((2, 16000))
+    taps = rng.standard_normal(1025)
 
-    with pytest.raises(NotImplementedError, match="Partitioned convolution backend not yet implemented."):
-        apply_fir(audio, taps, backend=FirBackend.PARTITIONED)
+    fft_out = apply_fir(audio, taps, backend=FirBackend.FFT)
+    part_out = apply_fir(audio, taps, backend=FirBackend.PARTITIONED)
+
+    assert part_out.shape == audio.shape
+    assert np.allclose(fft_out, part_out, atol=1e-10)
 
 
 def test_three_band_split_low_tone_lands_in_low_band():

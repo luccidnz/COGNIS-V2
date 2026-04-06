@@ -82,6 +82,8 @@ def test_engine_process_with_different_backends():
 
     out_auto = run_with_backend("AUTO")
     out_fft = run_with_backend("FFT")
+    out_part = run_with_backend("PARTITIONED")
 
     # We won't test DIRECT on full engine run as it's very slow for 24000 samples and 1537 taps.
-    assert np.allclose(out_auto, out_fft, atol=1e-10)
+    assert np.allclose(out_auto, out_part, atol=1e-10)
+    assert np.allclose(out_fft, out_part, atol=1e-10)

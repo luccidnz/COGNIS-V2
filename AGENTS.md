@@ -14,7 +14,7 @@ The project is built around three core layers:
 ## Critical DSP Guidelines
 - **Deterministic DSP is paramount.** Outputs for the same audio with the same settings must be numerically reproducible. Do not introduce probabilistic steps in the DSP chain.
 - **The FIR crossover is explicitly test-backed.** Its behavior (isolation, reconstruction, finite output properties) is verified by tests. **Do not casually break or bypass the offline FIR setup.**
-- **Backend Swappability**: Future optimization work must maintain deterministic execution. When adding a compiled backend or a partitioned-convolution execution path, the existing validation (tests, API contracts) must remain intact. Any backend must support testing against the reference implementation to ensure phase and magnitude equivalency. The `PARTITIONED` backend is currently a placeholder for a future zero-latency/compiled execution path.
+- **Backend Swappability**: Future optimization work must maintain deterministic execution. When adding a compiled backend or updating the execution path, the existing validation (tests, API contracts) must remain intact. Any backend must support testing against the reference implementation to ensure phase and magnitude equivalency. The current `PARTITIONED` overlap-save Python backend serves as the reference blueprint for future zero-latency/compiled C++ migrations.
 - **Performance vs Default Options**: Benchmark regressions must be treated as failures. If a proposed optimization or backend benchmarks worse, do not make it the default path just because the code looks cleaner. `AUTO` should base its heuristic on benchmarks, and must prefer practical efficiency for offline mastering workloads.
 
 ## General Engineering Principles
