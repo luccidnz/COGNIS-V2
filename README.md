@@ -76,7 +76,26 @@ The repository includes an optional high-performance C++ DSP core via `pybind11`
 - **Compile Flags:** The native module strictly avoids aggressive non-deterministic compiler optimizations (like `-ffast-math`) by default to ensure DSP correctness.
 - **Validation:** You can run `./scripts/validate_native.sh` to build, test, and benchmark the native integration pipeline explicitly. This script checks explicit prerequisites (Python, CMake, pybind11), refuses to build if prerequisites are missing, clearly proves whether the native module built and loaded successfully, and explicitly distinguishes native path executions from fallback triggers.
 
-To build the optional native module manually, ensure you have CMake and Python development headers (`python3-dev`) installed, and install `pybind11` via pip (`pip install pybind11`). Then run:
+### Native Validation Prerequisites & Environment Warning
+Successful native validation expects the following to be installed and available:
+- Python development headers and tools (e.g., `python3-dev`)
+- `cmake`
+- `pybind11` **installed directly in the active Python environment** (`pip install pybind11`)
+
+**Important Environment Note:** If `pybind11` is missing from the active Python environment, the native proof script can hang, time out, or appear to fail even if the underlying native DSP algorithmic logic (like FFT or PARTITIONED) is completely correct. Always ensure the native module is built and importable in the *same* Python environment used for validation to avoid misinterpreting environment failures as algorithmic ones.
+
+### Validation Path & Interpretation Guidance
+Run the validation script using:
+```bash
+./scripts/validate_native.sh
+```
+When reviewing validation and benchmark outputs, clearly distinguish between:
+- **Native unavailable:** The C++ module wasn't built or imported successfully (e.g. environment issue).
+- **Native built but not imported:** The `.so` was compiled but isn't located where the python module expects it.
+- **Native imported and used:** The benchmark explicitly states `NATIVE` or `Proof: [Backend] executed natively`.
+- **Python fallback triggered:** The native runtime was present but explicitly handed execution back to Python due to an error or an unsupported mode.
+
+To build the optional native module manually, ensure you have the prerequisites installed, then run:
 ```bash
 # Provide CMake with a hint to the python environment's pybind11
 CMAKE_ARGS="-Dpybind11_DIR=$(python -c 'import pybind11; print(pybind11.get_cmake_dir())')"
