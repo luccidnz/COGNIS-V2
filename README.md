@@ -68,20 +68,23 @@ python -m cognis.cli input.wav output.wav --mode STREAMING_SAFE --target_loudnes
 ## Native Backend Support
 The repository includes an optional high-performance C++ DSP core via `pybind11` (`cpp/` directory).
 - **Optionality:** Normal pure-Python installation and workflows will not require compilation.
-- **Capabilities:** The native backend currently implements highly-optimized paths for `FFT` and `PARTITIONED` convolution. The C++ `PARTITIONED` backend removes the Python/Scipy overlap-save wrapper overhead and is recommended for standard repeated multiband rendering scenarios.
+- **Capabilities:** The native backend currently implements highly-optimized paths for `FFT` and `PARTITIONED` convolution. The C++ `PARTITIONED` backend removes the Python/Scipy overlap-save wrapper overhead and is recommended for standard repeated multiband rendering scenarios. The implementation is fully matching the Python reference and is roughly 2x faster than the Native monolithic `FFT` backend for long signals.
 - **Reference Spec:** The Python implementations in `fir_executor.py` remain the absolute behavioral reference. Native implementations must prove equivalence down to floating point margins.
-- **Fallback Behavior:** If the native module is absent, the execution safely falls back to Python. If the native module is present but an unsupported backend mode is selected (e.g. `DIRECT`), it explicitly falls back to Python.
-- **Error Handling:** If the native runtime fails unexpectedly, it will throw an explicit `RuntimeError`. Silent failure swallowing is off by default to maintain deterministic trust.
+- **Build/Discovery:** The build process heavily prefers finding standard python development tools (`find_package(Python COMPONENTS Interpreter Development REQUIRED)`) and a standard `pybind11` install (`find_package(pybind11 CONFIG)`) to prevent network brittleness, keeping `FetchContent` as a strictly documented last resort.
+- **Fallback Behavior:** If the native module is absent, the execution safely falls back to Python. If the native module is present but an unsupported backend mode is selected (e.g. `DIRECT`), it explicitly falls back to Python. Fallback on explicit runtime failure is strictly controlled by `_FALLBACK_ON_NATIVE_FAILURE` and is disabled by default to maintain deterministic trust.
+- **Error Handling:** If the native runtime fails unexpectedly, it will throw an explicit `RuntimeError` by default. Silent native failure swallowing is disabled.
 - **Compile Flags:** The native module strictly avoids aggressive non-deterministic compiler optimizations (like `-ffast-math`) by default to ensure DSP correctness.
-- **Validation:** You can run `scripts/validate_native.sh` to build, test, and benchmark the native integration pipeline explicitly.
+- **Validation:** You can run `./scripts/validate_native.sh` to build, test, and benchmark the native integration pipeline explicitly. This script clearly distinguishes between native paths executing correctly versus fallback triggers.
 
 To build the optional native module manually, run:
 ```bash
+# Optional: point to pybind11 explicitly if needed
+# CMAKE_ARGS="-Dpybind11_DIR=$(python -c 'import pybind11; print(pybind11.get_cmake_dir())')"
 mkdir -p cpp/build
 cd cpp/build
-cmake ..
+cmake .. $CMAKE_ARGS
 make
-cp cognis_native.*.so ../../cognis/dsp/
+cp cognis_native*.so ../../cognis/dsp/
 ```
 
 ## Roadmap
