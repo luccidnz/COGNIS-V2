@@ -2,10 +2,58 @@ import numpy as np
 
 from cognis.dsp.filters import FirBackend, get_linear_phase_three_band_splitter
 
+try:
+    from cognis.dsp import cognis_native
+    _NATIVE_AVAILABLE = True
+except ImportError:
+    cognis_native = None
+    _NATIVE_AVAILABLE = False
+
+_FALLBACK_ON_NATIVE_FAILURE = False
+
+
+def get_dynamics_execution_info() -> dict:
+    return {
+        "native_available": _NATIVE_AVAILABLE
+    }
+
+
+def _compute_gain_python(
+    sidechain: np.ndarray,
+    attack_coef: float,
+    release_coef: float,
+    threshold_db: float,
+    ratio: float,
+    initial_env: float,
+) -> tuple[np.ndarray, float]:
+    """
+    Compute the per-sample gain and updated envelope state using pure Python.
+    This explicit sample-by-sample loop is the primary bottleneck in the dynamics path.
+    """
+    gain = np.ones_like(sidechain, dtype=np.float64)
+    curr_env = initial_env
+
+    for sample_index, sample in enumerate(sidechain):
+        if sample > curr_env:
+            curr_env = attack_coef * curr_env + (1.0 - attack_coef) * sample
+        else:
+            curr_env = release_coef * curr_env + (1.0 - release_coef) * sample
+
+        env_db = 20.0 * np.log10(curr_env + 1e-10)
+        if env_db > threshold_db:
+            overshoot = env_db - threshold_db
+            reduction_db = overshoot * (1.0 - 1.0 / ratio)
+            gain[sample_index] = 10.0 ** (-reduction_db / 20.0)
+
+    return gain, curr_env
+
 
 class MultibandDynamics:
     LOW_CROSSOVER_HZ = 250.0
     HIGH_CROSSOVER_HZ = 4000.0
+
+    # Test observability attribute
+    last_execution_info = None
 
     # These FIR lengths are long enough to keep the low crossover credible,
     # but still bounded so repeated optimizer renders stay practical in Python.
@@ -46,26 +94,42 @@ class MultibandDynamics:
         attack_coef = np.exp(-1.0 / (self.sr * attack_seconds))
         release_coef = np.exp(-1.0 / (self.sr * release_seconds))
 
-        gain = np.ones_like(band, dtype=np.float64)
         sidechain = np.abs(np.mean(band, axis=0)) if band.ndim > 1 else np.abs(band)
 
-        curr_env = 0.0
-        # TODO(optimization): This explicit sample-by-sample Python loop is the primary
-        # bottleneck in the mastering render loop. It should be moved to a C++ extension
-        # (similar to the FIR path) to drastically speed up recursive envelope tracking.
-        for sample_index, sample in enumerate(sidechain):
-            if sample > curr_env:
-                curr_env = attack_coef * curr_env + (1.0 - attack_coef) * sample
-            else:
-                curr_env = release_coef * curr_env + (1.0 - release_coef) * sample
+        used_native = False
+        fallback_triggered = False
 
-            env_db = 20.0 * np.log10(curr_env + 1e-10)
-            if env_db > threshold_db:
-                overshoot = env_db - threshold_db
-                reduction_db = overshoot * (1.0 - 1.0 / ratio)
-                gain[:, sample_index] = 10.0 ** (-reduction_db / 20.0)
+        if _NATIVE_AVAILABLE:
+            try:
+                # C-contiguous enforce boundary
+                sidechain_c = np.ascontiguousarray(sidechain, dtype=np.float64)
 
-        return band * gain
+                # We could support initial_env passing from state in the future,
+                # currently keeping it at 0.0 to match original python implementation
+                gain_1d, final_env = cognis_native.compute_native_compressor_gain(
+                    sidechain_c, float(attack_coef), float(release_coef), float(threshold_db), float(ratio), 0.0
+                )
+                used_native = True
+            except Exception as e:
+                if _FALLBACK_ON_NATIVE_FAILURE:
+                    fallback_triggered = True
+                    gain_1d, _ = _compute_gain_python(
+                        sidechain, attack_coef, release_coef, threshold_db, ratio, 0.0
+                    )
+                else:
+                    raise RuntimeError(f"Native dynamics execution failed: {e}") from e
+        else:
+            gain_1d, _ = _compute_gain_python(
+                sidechain, attack_coef, release_coef, threshold_db, ratio, 0.0
+            )
+
+        # Optional: Observability state for tests
+        self.last_execution_info = {
+            "used_native": used_native,
+            "fallback_triggered": fallback_triggered
+        }
+
+        return band * gain_1d
 
     def process(self, audio: np.ndarray, dynamics_preservation: float) -> np.ndarray:
         """

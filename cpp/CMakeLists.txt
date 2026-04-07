@@ -31,7 +31,7 @@ endif()
 
 include_directories(include)
 
-pybind11_add_module(cognis_native src/pybind_module.cpp src/fir_executor.cpp)
+pybind11_add_module(cognis_native src/pybind_module.cpp src/fir_executor.cpp src/dynamics_executor.cpp)
 
 option(COGNIS_EXPERIMENTAL_FAST_MATH "Enable aggressive floating point optimizations (risks determinism)" OFF)
 

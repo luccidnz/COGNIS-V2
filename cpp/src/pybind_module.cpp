@@ -2,6 +2,7 @@
 #include <pybind11/numpy.h>
 #include <stdexcept>
 #include "cognis_dsp/fir_executor.hpp"
+#include "cognis_dsp/dynamics_executor.hpp"
 
 namespace py = pybind11;
 
@@ -69,7 +70,53 @@ py::array_t<double> execute_native_fir_2d(py::array_t<double> audio, py::array_t
     return result;
 }
 
+py::tuple compute_native_compressor_gain(
+    py::array_t<double> sidechain,
+    double attack_coef,
+    double release_coef,
+    double threshold_db,
+    double ratio,
+    double initial_env
+) {
+    py::buffer_info sidechain_info = sidechain.request();
+
+    if (sidechain_info.format != py::format_descriptor<double>::format()) {
+        throw std::invalid_argument("Inputs must be float64");
+    }
+
+    if (sidechain_info.ndim != 1) {
+        throw std::invalid_argument("sidechain must be 1-dimensional");
+    }
+
+    if (!(sidechain.flags() & pybind11::detail::npy_api::NPY_ARRAY_C_CONTIGUOUS_)) {
+        throw std::invalid_argument("Inputs must be C-contiguous");
+    }
+
+    size_t samples = sidechain_info.shape[0];
+
+    cognis_dsp::DynamicsExecutionRequest req;
+    req.sidechain_data = static_cast<double*>(sidechain_info.ptr);
+    req.samples = samples;
+    req.attack_coef = attack_coef;
+    req.release_coef = release_coef;
+    req.threshold_db = threshold_db;
+    req.ratio = ratio;
+    req.initial_env = initial_env;
+
+    cognis_dsp::DynamicsExecutor executor;
+    auto [gain_data, final_env] = executor.compute_gain(req);
+
+    auto result_gain = py::array_t<double>(samples);
+    py::buffer_info result_gain_info = result_gain.request();
+    double* result_gain_ptr = static_cast<double*>(result_gain_info.ptr);
+
+    std::copy(gain_data.begin(), gain_data.end(), result_gain_ptr);
+
+    return py::make_tuple(result_gain, final_env);
+}
+
 PYBIND11_MODULE(cognis_native, m) {
     m.doc() = "COGNIS Native DSP Module";
     m.def("execute_native_fir_2d", &execute_native_fir_2d, "Apply native FIR filter to audio");
+    m.def("compute_native_compressor_gain", &compute_native_compressor_gain, "Compute native recursive envelope tracking and gain");
 }
