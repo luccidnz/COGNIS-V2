@@ -5,9 +5,14 @@
 
 namespace py = pybind11;
 
-py::array_t<double> execute_native_fir_2d(py::array_t<double> audio, py::array_t<double> taps, const std::string& backend) {
-    if (backend != "fft") {
-        throw std::runtime_error("Native FIR execution currently only supports 'fft' backend.");
+py::array_t<double> execute_native_fir_2d(py::array_t<double> audio, py::array_t<double> taps, int backend_id) {
+    cognis_dsp::FirBackendMode mode = cognis_dsp::FirBackendMode::UNKNOWN;
+    if (backend_id == 1) mode = cognis_dsp::FirBackendMode::DIRECT;
+    else if (backend_id == 2) mode = cognis_dsp::FirBackendMode::FFT;
+    else if (backend_id == 3) mode = cognis_dsp::FirBackendMode::PARTITIONED;
+
+    if (mode != cognis_dsp::FirBackendMode::FFT && mode != cognis_dsp::FirBackendMode::PARTITIONED) {
+        throw std::runtime_error("Native FIR execution currently only supports 'FFT' and 'PARTITIONED' backends.");
     }
 
     // Validate type and C-contiguous layout
@@ -46,7 +51,7 @@ py::array_t<double> execute_native_fir_2d(py::array_t<double> audio, py::array_t
     req.samples = samples;
     req.taps_data = static_cast<double*>(taps_info.ptr);
     req.num_taps = num_taps;
-    req.backend_mode = backend;
+    req.backend_mode = mode;
 
     cognis_dsp::FirExecutor executor;
     std::vector<double> output_data = executor.execute(req);

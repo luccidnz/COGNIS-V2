@@ -15,6 +15,13 @@ namespace cognis_dsp {
 // - padding/overlap logic must preserve strict mode="same" alignment
 // - return value must exactly match Python's scipy.signal.convolve(mode="same") behavior
 
+enum class FirBackendMode {
+    UNKNOWN = 0,
+    DIRECT = 1,
+    FFT = 2,
+    PARTITIONED = 3
+};
+
 struct FirExecutionRequest {
     const double* audio_data;
     size_t channels;
@@ -23,7 +30,7 @@ struct FirExecutionRequest {
     const double* taps_data;
     size_t num_taps;
 
-    std::string backend_mode; // e.g. "auto", "partitioned", "fft", "direct"
+    FirBackendMode backend_mode; // e.g. 1=DIRECT, 2=FFT, 3=PARTITIONED
 };
 
 class FirExecutor {

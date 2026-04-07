@@ -57,7 +57,13 @@ def run_benchmark_for_signal(label: str, audio: np.ndarray, splitter, is_short: 
         fft_info = _run_fft_and_check()
         print(f"  -> FFT Backend executed natively: {fft_info['used_native']}")
 
-    repeated_split_partitioned = _benchmark("splitter.split(audio, backend=PARTITIONED)", lambda: splitter.split(audio, backend=FirBackend.PARTITIONED), iterations=25)
+    def _run_partitioned_and_check():
+        splitter.split(audio, backend=FirBackend.PARTITIONED)
+        return get_fir_execution_info()
+
+    repeated_split_partitioned = _benchmark("splitter.split(audio, backend=PARTITIONED)", _run_partitioned_and_check, iterations=25)
+    part_info = _run_partitioned_and_check()
+    print(f"  -> PARTITIONED Backend executed natively: {part_info['used_native']}")
 
     # Direct is extremely slow for long signals and long taps. Only run if it's short, or a very small number of iterations.
     if is_short:
@@ -73,6 +79,27 @@ def run_benchmark_for_signal(label: str, audio: np.ndarray, splitter, is_short: 
     print(f"FFT split vs DIRECT split ratio: {repeated_split_fft / repeated_split_direct:.4f}")
     print(f"AUTO split vs reference best possible ratio: {repeated_split_auto / min(repeated_split_partitioned, repeated_split_fft):.4f}")
 
+
+def profile_render_loop(audio: np.ndarray, splitter):
+    """
+    Simulates a repeated render loop to represent the optimizer's workload.
+    """
+    print("\n--- Profiling Repeated Render Loop (Simulating Optimizer) ---")
+    import cProfile
+    import pstats
+
+    def render_loop():
+        for _ in range(15):
+            # simulate 15 iterations of optimizer tweaks resulting in FIR splits
+            splitter.split(audio, backend=FirBackend.AUTO)
+
+    profiler = cProfile.Profile()
+    profiler.enable()
+    render_loop()
+    profiler.disable()
+
+    stats = pstats.Stats(profiler).sort_stats('cumtime')
+    stats.print_stats(15)
 
 def main() -> None:
     sr = 48000
@@ -114,6 +141,9 @@ def main() -> None:
 
     cache_info = get_fir_design_cache_info()
     print(f"\ncache info: {cache_info}")
+
+    # 5s signal loop profile
+    profile_render_loop(audio_long, splitter)
 
 
 if __name__ == "__main__":

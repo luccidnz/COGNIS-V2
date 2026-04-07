@@ -1,0 +1,38 @@
+name: Native CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test-native:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .[dev]
+
+    - name: Set up CMake
+      uses: jwlawson/actions-setup-cmake@v1.14.2
+      with:
+        cmake-version: '3.24.x'
+
+    - name: Install pybind11 globally
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y pybind11-dev
+
+    - name: Run native validation
+      run: |
+        chmod +x scripts/validate_native.sh
+        ./scripts/validate_native.sh

@@ -204,9 +204,19 @@ def execute_fir_2d(audio_2d: np.ndarray, taps: np.ndarray, backend: FirBackend) 
     _EXECUTION_INFO["selected_method"] = method
 
     # 3. Dispatch to Native if available and explicitly requested (or AUTO decides to use it)
-    if _NATIVE_FIR_AVAILABLE and method == "fft":
+    # Internal integer mapping for native backend
+    # 1: DIRECT, 2: FFT, 3: PARTITIONED
+    backend_id_map = {
+        "direct": 1,
+        "fft": 2,
+        "partitioned": 3
+    }
+
+    # 3. Dispatch to Native if available and explicitly requested (or AUTO decides to use it)
+    if _NATIVE_FIR_AVAILABLE and method in ["fft", "partitioned"]:
         try:
-            result = _cognis_native.execute_native_fir_2d(audio_2d, taps, method)
+            native_id = backend_id_map.get(method, 0)
+            result = _cognis_native.execute_native_fir_2d(audio_2d, taps, native_id)
             _EXECUTION_INFO["used_native"] = True
             return result
         except Exception as e:
