@@ -9,6 +9,8 @@ except ImportError:
     cognis_native = None
     _NATIVE_AVAILABLE = False
 
+_FALLBACK_ON_NATIVE_FAILURE = False
+
 
 def get_dynamics_execution_info() -> dict:
     return {
@@ -108,11 +110,14 @@ class MultibandDynamics:
                     sidechain_c, float(attack_coef), float(release_coef), float(threshold_db), float(ratio), 0.0
                 )
                 used_native = True
-            except Exception:
-                fallback_triggered = True
-                gain_1d, _ = _compute_gain_python(
-                    sidechain, attack_coef, release_coef, threshold_db, ratio, 0.0
-                )
+            except Exception as e:
+                if _FALLBACK_ON_NATIVE_FAILURE:
+                    fallback_triggered = True
+                    gain_1d, _ = _compute_gain_python(
+                        sidechain, attack_coef, release_coef, threshold_db, ratio, 0.0
+                    )
+                else:
+                    raise RuntimeError(f"Native dynamics execution failed: {e}") from e
         else:
             gain_1d, _ = _compute_gain_python(
                 sidechain, attack_coef, release_coef, threshold_db, ratio, 0.0

@@ -46,7 +46,7 @@ def test_multiband_dynamics_native_fallback_and_equivalence(monkeypatch):
         # Output must be numerically equivalent
         assert np.allclose(out_native, out_python, atol=1e-12)
 
-        # Test explicit fallback handling when native throws
+        # Test default strict failure handling when native throws
         monkeypatch.setattr(dynamics, "_NATIVE_AVAILABLE", True)
 
         def mock_compute_gain(*args, **kwargs):
@@ -54,6 +54,12 @@ def test_multiband_dynamics_native_fallback_and_equivalence(monkeypatch):
 
         monkeypatch.setattr(dynamics.cognis_native, "compute_native_compressor_gain", mock_compute_gain)
 
+        import pytest
+        with pytest.raises(RuntimeError, match="Native dynamics execution failed: Mock Native Failure"):
+            md.process(audio, dynamics_preservation=0.4)
+
+        # Test explicit fallback handling when explicitly enabled
+        monkeypatch.setattr(dynamics, "_FALLBACK_ON_NATIVE_FAILURE", True)
         out_fallback = md.process(audio, dynamics_preservation=0.4)
         assert md.last_execution_info["used_native"] is False
         assert md.last_execution_info["fallback_triggered"] is True
