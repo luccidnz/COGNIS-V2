@@ -47,6 +47,9 @@ class Limiter:
         
         # 3. Smooth the gain reduction envelope (attack / release)
         # Gaussian filter provides a smooth, symmetric transition (quasi-lookahead)
+        # TODO(optimization): This gaussian_filter1d call is the secondary bottleneck
+        # in the DSP chain. Evaluate whether it can be replaced by cascading simpler
+        # native IIR passes or accelerated in C++ during a future phase.
         release_ms = 10.0
         sigma_samples = (release_ms / 1000.0) * fs
         smooth_gain = gaussian_filter1d(held_gain, sigma=sigma_samples)

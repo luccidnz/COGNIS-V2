@@ -50,6 +50,9 @@ class MultibandDynamics:
         sidechain = np.abs(np.mean(band, axis=0)) if band.ndim > 1 else np.abs(band)
 
         curr_env = 0.0
+        # TODO(optimization): This explicit sample-by-sample Python loop is the primary
+        # bottleneck in the mastering render loop. It should be moved to a C++ extension
+        # (similar to the FIR path) to drastically speed up recursive envelope tracking.
         for sample_index, sample in enumerate(sidechain):
             if sample > curr_env:
                 curr_env = attack_coef * curr_env + (1.0 - attack_coef) * sample
