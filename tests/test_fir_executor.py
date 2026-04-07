@@ -36,12 +36,13 @@ def test_execute_fir_2d_fallback_works_cleanly():
     audio = np.random.randn(2, 1024)
     taps = np.random.randn(129)
 
-    out = execute_fir_2d(audio, taps, FirBackend.PARTITIONED)
+    # Use DIRECT since we don't have native DIRECT support
+    out = execute_fir_2d(audio, taps, FirBackend.DIRECT)
     assert out.shape == audio.shape
 
     info = get_fir_execution_info()
     assert info["used_native"] is False
-    assert info["selected_method"] == "partitioned"
+    assert info["selected_method"] == "direct"
 
 @pytest.mark.skipif(not _NATIVE_FIR_AVAILABLE, reason="Native FIR extension is not available")
 def test_execute_fir_2d_observability_and_native_execution():
@@ -96,3 +97,61 @@ def test_execute_fir_2d_native_fft_matches_python_fft():
 
     # Assert same mode exactly matches input shape
     assert out_native.shape == audio.shape
+
+@pytest.mark.skipif(not _NATIVE_FIR_AVAILABLE, reason="Native FIR extension is not available")
+def test_execute_fir_2d_native_partitioned_matches_python_partitioned():
+    """Ensure that the native PARTITIONED backend exactly matches the Python reference implementation."""
+    np.random.seed(43)
+    # Use a long enough audio signal to cross block boundaries
+    audio = np.random.randn(2, 8192).astype(np.float64)
+    taps = np.random.randn(129).astype(np.float64)
+
+    # Calculate native output
+    out_native = execute_fir_2d(audio, taps, FirBackend.PARTITIONED)
+    assert get_fir_execution_info()["used_native"] is True
+
+    # Calculate python reference output
+    out_python = execute_python_fir_2d(audio, taps, FirBackend.PARTITIONED)
+
+    np.testing.assert_allclose(out_native, out_python, rtol=1e-5, atol=1e-7)
+    assert out_native.shape == audio.shape
+
+@pytest.mark.skipif(not _NATIVE_FIR_AVAILABLE, reason="Native FIR extension is not available")
+def test_execute_fir_2d_native_fft_multichannel_separation():
+    """Ensure that the native FFT correctly processes multiple channels without cross-talk."""
+    np.random.seed(42)
+    # Channel 0 has signal, Channel 1 is completely silent
+    audio = np.zeros((2, 1024), dtype=np.float64)
+    audio[0, :] = np.random.randn(1024)
+
+    taps = np.random.randn(65).astype(np.float64)
+
+    out_native = execute_fir_2d(audio, taps, FirBackend.FFT)
+    assert get_fir_execution_info()["used_native"] is True
+
+    # Check that channel 1 remained completely silent
+    np.testing.assert_allclose(out_native[1, :], 0.0, atol=1e-12)
+
+    # Check that channel 0 was processed
+    assert not np.allclose(out_native[0, :], 0.0)
+
+    out_python = execute_python_fir_2d(audio, taps, FirBackend.FFT)
+    np.testing.assert_allclose(out_native[0, :], out_python[0, :], rtol=1e-5, atol=1e-7)
+
+@pytest.mark.skipif(not _NATIVE_FIR_AVAILABLE, reason="Native FIR extension is not available")
+def test_execute_fir_2d_native_fft_alignment():
+    """Ensure padding/shift alignment exactly matches Python's mode='same' semantics for symmetric kernels."""
+    # An impulse should simply delay the signal according to mode="same"
+    # Actually, if we apply a Dirac delta centered at tap N/2, it shouldn't delay at all under mode="same".
+    audio = np.zeros((1, 512), dtype=np.float64)
+    audio[0, 256] = 1.0 # Impulse in the middle
+
+    taps = np.zeros(65, dtype=np.float64)
+    taps[32] = 1.0 # Impulse at the center tap (assuming odd length)
+
+    out_native = execute_fir_2d(audio, taps, FirBackend.FFT)
+    out_python = execute_python_fir_2d(audio, taps, FirBackend.FFT)
+
+    # Verify impulse hasn't shifted compared to Python
+    assert np.argmax(out_native[0]) == 256
+    np.testing.assert_allclose(out_native, out_python, rtol=1e-5, atol=1e-7)

@@ -1,0 +1,57 @@
+cold splitter build: 3.520ms
+cached splitter lookup: total=0.0002s avg=0.001ms over 200 iterations
+
+--- Short Signal Scenario (shape: (2, 512)) ---
+reference per-channel fftconvolve(low band): total=0.0126s avg=0.504ms over 25 iterations
+apply_fir(low band, backend=AUTO): total=0.0059s avg=0.237ms over 25 iterations
+  -> AUTO decided on method: 'fft' (Native? True)
+splitter.split(audio, backend=AUTO): total=0.0097s avg=0.387ms over 25 iterations
+splitter.split(audio, backend=FFT): total=0.0074s avg=0.298ms over 25 iterations
+  -> FFT Backend executed natively: True
+splitter.split(audio, backend=PARTITIONED): total=0.0318s avg=1.273ms over 25 iterations
+  -> PARTITIONED Backend executed natively: False
+splitter.split(audio, backend=DIRECT): total=0.8178s avg=32.712ms over 25 iterations
+apply_fir vs reference fft ratio: 0.4697
+PARTITIONED split vs FFT split ratio: 4.2783
+FFT split vs DIRECT split ratio: 0.0091
+AUTO split vs reference best possible ratio: 1.3007
+
+--- Long Signal Scenario (5s) (shape: (2, 240000)) ---
+reference per-channel fftconvolve(low band): total=1.4087s avg=56.349ms over 25 iterations
+apply_fir(low band, backend=AUTO): total=0.6032s avg=24.130ms over 25 iterations
+  -> AUTO decided on method: 'partitioned' (Native? False)
+splitter.split(audio, backend=AUTO): total=1.2334s avg=49.338ms over 25 iterations
+splitter.split(audio, backend=FFT): total=2.5329s avg=101.316ms over 25 iterations
+  -> FFT Backend executed natively: True
+splitter.split(audio, backend=PARTITIONED): total=0.9989s avg=39.957ms over 25 iterations
+  -> PARTITIONED Backend executed natively: False
+splitter.split(audio, backend=DIRECT): total=29.5113s avg=14755.666ms over 2 iterations
+apply_fir vs reference fft ratio: 0.4282
+PARTITIONED split vs FFT split ratio: 0.3944
+FFT split vs DIRECT split ratio: 0.0069
+AUTO split vs reference best possible ratio: 1.2348
+
+cache info: {'splitter': {'hits': 200, 'misses': 1, 'maxsize': 32, 'currsize': 1}, 'fir': {'hits': 0, 'misses': 2, 'maxsize': 64, 'currsize': 2}, 'kernel_fft': {'hits': 177, 'misses': 2, 'maxsize': 128, 'currsize': 2}}
+
+--- Profiling Repeated Render Loop (Simulating Optimizer) ---
+         80027 function calls in 0.771 seconds
+
+   Ordered by: cumulative time
+   List reduced from 71 to 15 due to restriction <15>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.014    0.014    0.771    0.771 /app/scripts/benchmark_fir_crossover.py:91(render_loop)
+       15    0.038    0.003    0.757    0.050 /app/cognis/dsp/filters.py:40(split)
+       30    0.019    0.001    0.719    0.024 /app/cognis/dsp/fir_executor.py:164(execute_fir_2d)
+       30    0.012    0.000    0.698    0.023 /app/cognis/dsp/fir_executor.py:107(execute_python_fir_2d)
+       30    0.173    0.006    0.684    0.023 /app/cognis/dsp/fir_executor.py:36(_apply_python_partitioned_fir_2d)
+     3540    0.009    0.000    0.446    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/scipy/fft/_backend.py:19(__ua_function__)
+     3540    0.011    0.000    0.432    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/scipy/fft/_basic_backend.py:27(_execute_1D)
+     1770    0.002    0.000    0.223    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/scipy/fft/_basic_backend.py:95(irfft)
+     1770    0.009    0.000    0.215    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/scipy/fft/_pocketfft/basic.py:70(c2r)
+     1770    0.002    0.000    0.212    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/scipy/fft/_basic_backend.py:89(rfft)
+     1770    0.008    0.000    0.203    0.000 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/scipy/fft/_pocketfft/basic.py:40(r2c)
+     1770    0.171    0.000    0.171    0.000 {built-in method scipy.fft._pocketfft.pypocketfft.c2r}
+     1770    0.159    0.000    0.159    0.000 {built-in method scipy.fft._pocketfft.pypocketfft.r2c}
+       30    0.001    0.000    0.061    0.002 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/numpy/lib/_arraypad_impl.py:546(pad)
+       30    0.053    0.002    0.054    0.002 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/numpy/lib/_arraypad_impl.py:87(_pad_simple)
