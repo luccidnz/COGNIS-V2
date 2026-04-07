@@ -15,10 +15,15 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
+    - name: Install system dependencies for native build
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y python3-dev cmake
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -e .[dev]
+        pip install pybind11
     - name: Run native validation script
       run: |
         ./scripts/validate_native.sh

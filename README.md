@@ -74,12 +74,12 @@ The repository includes an optional high-performance C++ DSP core via `pybind11`
 - **Fallback Behavior:** If the native module is absent, the execution safely falls back to Python. If the native module is present but an unsupported backend mode is selected (e.g. `DIRECT`), it explicitly falls back to Python. Fallback on explicit runtime failure is strictly controlled by `_FALLBACK_ON_NATIVE_FAILURE` and is disabled by default to maintain deterministic trust.
 - **Error Handling:** If the native runtime fails unexpectedly, it will throw an explicit `RuntimeError` by default. Silent native failure swallowing is disabled.
 - **Compile Flags:** The native module strictly avoids aggressive non-deterministic compiler optimizations (like `-ffast-math`) by default to ensure DSP correctness.
-- **Validation:** You can run `./scripts/validate_native.sh` to build, test, and benchmark the native integration pipeline explicitly. This script clearly distinguishes between native paths executing correctly versus fallback triggers.
+- **Validation:** You can run `./scripts/validate_native.sh` to build, test, and benchmark the native integration pipeline explicitly. This script checks explicit prerequisites (Python, CMake, pybind11), refuses to build if prerequisites are missing, clearly proves whether the native module built and loaded successfully, and explicitly distinguishes native path executions from fallback triggers.
 
-To build the optional native module manually, run:
+To build the optional native module manually, ensure you have CMake and Python development headers (`python3-dev`) installed, and install `pybind11` via pip (`pip install pybind11`). Then run:
 ```bash
-# Optional: point to pybind11 explicitly if needed
-# CMAKE_ARGS="-Dpybind11_DIR=$(python -c 'import pybind11; print(pybind11.get_cmake_dir())')"
+# Provide CMake with a hint to the python environment's pybind11
+CMAKE_ARGS="-Dpybind11_DIR=$(python -c 'import pybind11; print(pybind11.get_cmake_dir())')"
 mkdir -p cpp/build
 cd cpp/build
 cmake .. $CMAKE_ARGS
