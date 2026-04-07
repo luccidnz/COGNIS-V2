@@ -22,6 +22,7 @@ The project is built around three core layers:
 - **Compile Configurations**: Determinism takes precedence over risky optimization shortcuts. Compile flags like `-ffast-math` must be gated off by default.
 - **Build Reproducibility**: Dependency fetching during native builds must heavily prioritize standard configuration mechanisms (`find_package(Python ... REQUIRED)`, `find_package(pybind11 CONFIG)`) and local environments to ensure deterministic reproducibility, keeping network fetching strictly as a documented fallback. Do not hide missing native prerequisites behind magical fallback behavior.
 - **Native Verification Observability**: Validation of native functionality must not confuse native-unavailable with native-used. If native behavior was requested but python fallback triggered, verification output must make this completely explicit.
+- **Environment Failures vs DSP Algorithmic Failures**: Treat missing native prerequisites (e.g. `pybind11`, `cmake`, Python dev tools) as an environment setup issue first. Do not overclaim native failure or DSP algorithmic incorrectness if the underlying environment is simply missing `pybind11`. Explicitly distinguish between environment/setup failures (which hang or block building) and algorithmic native-DSP failures (which fail mathematical equivalence tests).
 
 ## General Engineering Principles
 - Maintain test coverage. If you introduce a new execution mode, test it, including testing for equivalent behaviors against established reference backends.
