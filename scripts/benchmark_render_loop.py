@@ -50,17 +50,22 @@ def benchmark_components():
 
     print("--- Component Benchmarks (5 iterations, 5s stereo signal) ---")
 
+    # Benchmarking Dynamics
     start_dyn = time.perf_counter()
     for _ in range(5):
         dynamics.process(audio, 0.5)
     dyn_time = time.perf_counter() - start_dyn
+
+    dyn_info = dynamics.last_execution_info or {}
+    dyn_native = dyn_info.get("used_native", False)
+    dyn_fallback = dyn_info.get("fallback_triggered", False)
 
     start_lim = time.perf_counter()
     for _ in range(5):
         limiter.process(audio, -1.0, "TRUE_PEAK", 1)
     lim_time = time.perf_counter() - start_lim
 
-    print(f"MultibandDynamics.process: {dyn_time:.3f}s total")
+    print(f"MultibandDynamics.process: {dyn_time:.3f}s total (Native Used: {dyn_native}, Fallback: {dyn_fallback})")
     print(f"Limiter.process: {lim_time:.3f}s total")
 
 if __name__ == "__main__":
