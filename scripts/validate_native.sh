@@ -6,9 +6,19 @@ echo "COGNIS-V2 Native Validation Path"
 echo "=================================================="
 
 echo "[1/4] Building optional native backend..."
+
+# Provide hints to CMake to find pybind11 in the active python environment if available
+if python -c "import pybind11" &> /dev/null; then
+    PYBIND11_DIR=$(python -c "import pybind11; print(pybind11.get_cmake_dir())")
+    echo "Found pybind11 in Python env: $PYBIND11_DIR"
+    CMAKE_ARGS="-Dpybind11_DIR=$PYBIND11_DIR"
+else
+    CMAKE_ARGS=""
+fi
+
 mkdir -p cpp/build
 cd cpp/build
-cmake ..
+cmake .. $CMAKE_ARGS
 make
 
 # Ensure we don't accidentally commit .so files by carefully moving them

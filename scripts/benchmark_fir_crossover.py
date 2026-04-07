@@ -48,14 +48,14 @@ def run_benchmark_for_signal(label: str, audio: np.ndarray, splitter, is_short: 
         info = get_fir_execution_info()
         return info
 
-    if _NATIVE_FIR_AVAILABLE:
-        repeated_split_fft = _benchmark("splitter.split(audio, backend=FFT)", _run_fft_and_check, iterations=25)
-        fft_info = _run_fft_and_check()
-        print(f"  -> FFT Backend executed natively: {fft_info['used_native']}")
+    repeated_split_fft = _benchmark("splitter.split(audio, backend=FFT)", _run_fft_and_check, iterations=25)
+    fft_info = _run_fft_and_check()
+    if fft_info['used_native']:
+        print(f"  -> Proof: FFT executed natively.")
+    elif fft_info['fallback_triggered']:
+        print(f"  -> Proof: FFT fallback triggered (Python used).")
     else:
-        repeated_split_fft = _benchmark("splitter.split(audio, backend=FFT)", _run_fft_and_check, iterations=25)
-        fft_info = _run_fft_and_check()
-        print(f"  -> FFT Backend executed natively: {fft_info['used_native']}")
+        print(f"  -> Proof: FFT executed in Python (No native available).")
 
     def _run_partitioned_and_check():
         splitter.split(audio, backend=FirBackend.PARTITIONED)
@@ -63,7 +63,12 @@ def run_benchmark_for_signal(label: str, audio: np.ndarray, splitter, is_short: 
 
     repeated_split_partitioned = _benchmark("splitter.split(audio, backend=PARTITIONED)", _run_partitioned_and_check, iterations=25)
     part_info = _run_partitioned_and_check()
-    print(f"  -> PARTITIONED Backend executed natively: {part_info['used_native']}")
+    if part_info['used_native']:
+        print(f"  -> Proof: PARTITIONED executed natively.")
+    elif part_info['fallback_triggered']:
+        print(f"  -> Proof: PARTITIONED fallback triggered (Python used).")
+    else:
+        print(f"  -> Proof: PARTITIONED executed in Python (No native available).")
 
     # Direct is extremely slow for long signals and long taps. Only run if it's short, or a very small number of iterations.
     if is_short:

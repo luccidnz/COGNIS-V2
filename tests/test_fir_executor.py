@@ -58,9 +58,7 @@ def test_execute_fir_2d_observability_and_native_execution():
 
 @pytest.mark.skipif(not _NATIVE_FIR_AVAILABLE, reason="Native FIR extension is not available")
 def test_execute_fir_2d_native_failure_semantics():
-    # We can trigger a native failure by passing an unsupported method to the native layer.
-    # Actually, the python layer protects against this.
-    # Let's temporarily inject a bad method to test the exception throwing.
+    # We can trigger a native failure by simulating a crash in the native layer.
     audio = np.random.randn(2, 1024).astype(np.float64)
     taps = np.random.randn(65).astype(np.float64)
 
@@ -76,6 +74,30 @@ def test_execute_fir_2d_native_failure_semantics():
             fir_exec_mod.execute_fir_2d(audio, taps, FirBackend.FFT)
         finally:
             fir_exec_mod._cognis_native.execute_native_fir_2d = original_execute
+
+@pytest.mark.skipif(not _NATIVE_FIR_AVAILABLE, reason="Native FIR extension is not available")
+def test_execute_fir_2d_native_failure_fallback_semantics():
+    # Test that fallback works when _FALLBACK_ON_NATIVE_FAILURE is True
+    audio = np.random.randn(2, 1024).astype(np.float64)
+    taps = np.random.randn(65).astype(np.float64)
+
+    original_execute = fir_exec_mod._cognis_native.execute_native_fir_2d
+    original_fallback = fir_exec_mod._FALLBACK_ON_NATIVE_FAILURE
+    fir_exec_mod._FALLBACK_ON_NATIVE_FAILURE = True
+
+    def mock_execute(*args, **kwargs):
+        raise Exception("Simulated Native Crash")
+    fir_exec_mod._cognis_native.execute_native_fir_2d = mock_execute
+
+    try:
+        out = fir_exec_mod.execute_fir_2d(audio, taps, FirBackend.FFT)
+        info = get_fir_execution_info()
+        assert info["used_native"] is False
+        assert info["fallback_triggered"] is True
+        assert out.shape == audio.shape
+    finally:
+        fir_exec_mod._cognis_native.execute_native_fir_2d = original_execute
+        fir_exec_mod._FALLBACK_ON_NATIVE_FAILURE = original_fallback
 
 
 @pytest.mark.skipif(not _NATIVE_FIR_AVAILABLE, reason="Native FIR extension is not available")
