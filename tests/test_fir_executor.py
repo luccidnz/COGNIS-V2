@@ -42,6 +42,7 @@ def test_execute_fir_2d_fallback_works_cleanly():
 
     info = get_fir_execution_info()
     assert info["used_native"] is False
+    assert info["fallback_triggered"] is False # It wasn't a native crash fallback, just purely unsupported/unavailable so it ran pure python
     assert info["selected_method"] == "direct"
 
 @pytest.mark.skipif(not _NATIVE_FIR_AVAILABLE, reason="Native FIR extension is not available")
@@ -62,6 +63,10 @@ def test_execute_fir_2d_native_failure_semantics():
     audio = np.random.randn(2, 1024).astype(np.float64)
     taps = np.random.randn(65).astype(np.float64)
 
+    # Ensure fallback is off for this test
+    original_fallback = fir_exec_mod._FALLBACK_ON_NATIVE_FAILURE
+    fir_exec_mod._FALLBACK_ON_NATIVE_FAILURE = False
+
     # This shouldn't normally happen since the boundary filters it, but if Native raises an error:
     with pytest.raises(RuntimeError, match="Native FIR execution failed"):
         # To test the boundary logic (which wraps the native throw in a new RuntimeError),
@@ -74,6 +79,12 @@ def test_execute_fir_2d_native_failure_semantics():
             fir_exec_mod.execute_fir_2d(audio, taps, FirBackend.FFT)
         finally:
             fir_exec_mod._cognis_native.execute_native_fir_2d = original_execute
+            fir_exec_mod._FALLBACK_ON_NATIVE_FAILURE = original_fallback
+
+    # Prove that the state reflects no native usage and no fallback recovery
+    info = get_fir_execution_info()
+    assert info["used_native"] is False
+    assert info["fallback_triggered"] is False
 
 @pytest.mark.skipif(not _NATIVE_FIR_AVAILABLE, reason="Native FIR extension is not available")
 def test_execute_fir_2d_native_failure_fallback_semantics():

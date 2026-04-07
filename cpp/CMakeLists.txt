@@ -10,6 +10,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 find_package(Python COMPONENTS Interpreter Development REQUIRED)
 
 # Try to find pybind11 via standard config first (e.g. system install or python env)
+# We set PYBIND11_FINDPYTHON to ON to avoid deprecation warnings about FindPythonInterp and FindPythonLibs
+set(PYBIND11_FINDPYTHON ON)
 find_package(pybind11 CONFIG QUIET)
 
 if(pybind11_FOUND)
