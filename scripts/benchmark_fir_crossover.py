@@ -1,4 +1,9 @@
+from __future__ import annotations
+
+import argparse
+import platform
 import time
+from typing import Any
 
 import numpy as np
 from scipy.signal import fftconvolve
@@ -9,109 +14,89 @@ from cognis.dsp.filters import (
     clear_fir_design_cache,
     get_fir_design_cache_info,
     get_linear_phase_three_band_splitter,
-    split_linear_phase_three_band,
 )
+from cognis.dsp.fir_executor import _NATIVE_FIR_AVAILABLE, _cognis_native, get_fir_execution_info
+
+from scripts._benchmark_common import build_module_state, dumps_json, to_jsonable
 
 
-def _benchmark(label: str, fn, iterations: int) -> float:
+def _benchmark(label: str, fn, iterations: int) -> dict[str, Any]:
     start = time.perf_counter()
     for _ in range(iterations):
         fn()
     elapsed = time.perf_counter() - start
-    avg_ms = (elapsed / iterations) * 1000.0
-    print(f"{label}: total={elapsed:.4f}s avg={avg_ms:.3f}ms over {iterations} iterations")
-    return elapsed
+    return {
+        "label": label,
+        "iterations": iterations,
+        "total_seconds": elapsed,
+        "avg_ms": (elapsed / iterations) * 1000.0,
+    }
 
 
-def run_benchmark_for_signal(label: str, audio: np.ndarray, splitter, is_short: bool = False):
+def _backend_result(label: str, backend: FirBackend, audio: np.ndarray, splitter, iterations: int) -> dict[str, Any]:
+    def _call() -> None:
+        splitter.split(audio, backend=backend)
+
+    timing = _benchmark(label, _call, iterations)
+    execution = build_module_state(
+        available=_NATIVE_FIR_AVAILABLE,
+        imported_module=_cognis_native,
+        execution_info=get_fir_execution_info(),
+    )
+    timing["execution"] = execution
+    return timing
+
+
+def _apply_fir_result(label: str, audio: np.ndarray, taps: np.ndarray, iterations: int) -> dict[str, Any]:
+    def _call() -> None:
+        apply_fir(audio, taps, backend=FirBackend.AUTO)
+
+    timing = _benchmark(label, _call, iterations)
+    timing["execution"] = build_module_state(
+        available=_NATIVE_FIR_AVAILABLE,
+        imported_module=_cognis_native,
+        execution_info=get_fir_execution_info(),
+    )
+    return timing
+
+
+def _signal_benchmark(label: str, audio: np.ndarray, splitter, *, is_short: bool) -> dict[str, Any]:
     print(f"\n--- {label} (shape: {audio.shape}) ---")
 
-    reference_low = _benchmark(
+    reference = _benchmark(
         "reference per-channel fftconvolve(low band)",
         lambda: np.vstack([fftconvolve(channel, splitter.low_taps, mode="same") for channel in audio]),
         iterations=25,
     )
-    from cognis.dsp.fir_executor import _NATIVE_FIR_AVAILABLE, get_fir_execution_info
 
-    def _apply_fir_and_report_auto():
-        apply_fir(audio, splitter.low_taps, backend=FirBackend.AUTO)
+    auto_apply = _apply_fir_result("apply_fir(low band, backend=AUTO)", audio, splitter.low_taps, iterations=25)
+    auto_split = _backend_result("splitter.split(audio, backend=AUTO)", FirBackend.AUTO, audio, splitter, iterations=25)
+    fft_split = _backend_result("splitter.split(audio, backend=FFT)", FirBackend.FFT, audio, splitter, iterations=25)
+    part_split = _backend_result("splitter.split(audio, backend=PARTITIONED)", FirBackend.PARTITIONED, audio, splitter, iterations=25)
 
-    optimized_low = _benchmark("apply_fir(low band, backend=AUTO)", _apply_fir_and_report_auto, iterations=25)
-    auto_info = get_fir_execution_info()
-    print(f"  -> AUTO decided on method: '{auto_info['selected_method']}'")
-    print(f"  -> AUTO execution path:    {'NATIVE' if auto_info['used_native'] else 'PYTHON (Fallback)' if auto_info['fallback_triggered'] else 'PYTHON'}")
+    direct_iterations = 25 if is_short else 2
+    direct_split = _backend_result("splitter.split(audio, backend=DIRECT)", FirBackend.DIRECT, audio, splitter, iterations=direct_iterations)
+    if not is_short:
+        direct_split["normalized_to_iterations"] = 25
+        direct_split["normalized_total_seconds"] = (direct_split["total_seconds"] / 2.0) * 25.0
+        direct_split["normalized_avg_ms"] = (direct_split["normalized_total_seconds"] / 25.0) * 1000.0
 
-
-    repeated_split_auto = _benchmark("splitter.split(audio, backend=AUTO)", lambda: splitter.split(audio, backend=FirBackend.AUTO), iterations=25)
-
-    def _run_fft_and_check():
-        splitter.split(audio, backend=FirBackend.FFT)
-        info = get_fir_execution_info()
-        return info
-
-    repeated_split_fft = _benchmark("splitter.split(audio, backend=FFT)", _run_fft_and_check, iterations=25)
-    fft_info = _run_fft_and_check()
-    if fft_info['used_native']:
-        print(f"  -> Proof: FFT executed natively.")
-    elif fft_info['fallback_triggered']:
-        print(f"  -> Proof: FFT execution triggered fallback (Python used).")
-    else:
-        print(f"  -> Proof: FFT executed in Python (Native unavailable or not used).")
-
-    def _run_partitioned_and_check():
-        splitter.split(audio, backend=FirBackend.PARTITIONED)
-        return get_fir_execution_info()
-
-    repeated_split_partitioned = _benchmark("splitter.split(audio, backend=PARTITIONED)", _run_partitioned_and_check, iterations=25)
-    part_info = _run_partitioned_and_check()
-    if part_info['used_native']:
-        print(f"  -> Proof: PARTITIONED executed natively.")
-    elif part_info['fallback_triggered']:
-        print(f"  -> Proof: PARTITIONED execution triggered fallback (Python used).")
-    else:
-        print(f"  -> Proof: PARTITIONED executed in Python (Native unavailable or not used).")
-
-    # Direct is extremely slow for long signals and long taps. Only run if it's short, or a very small number of iterations.
-    if is_short:
-        repeated_split_direct = _benchmark("splitter.split(audio, backend=DIRECT)", lambda: splitter.split(audio, backend=FirBackend.DIRECT), iterations=25)
-    else:
-        repeated_split_direct = _benchmark("splitter.split(audio, backend=DIRECT)", lambda: splitter.split(audio, backend=FirBackend.DIRECT), iterations=2)
-        # Normalize to 25 iterations for ratio comparison
-        repeated_split_direct = (repeated_split_direct / 2) * 25
+    return {
+        "label": label,
+        "shape": list(audio.shape),
+        "reference_low_band": reference,
+        "apply_fir_auto": auto_apply,
+        "split_auto": auto_split,
+        "split_fft": fft_split,
+        "split_partitioned": part_split,
+        "split_direct": direct_split,
+    }
 
 
-    print(f"apply_fir vs reference fft ratio: {optimized_low / reference_low:.4f}")
-    print(f"PARTITIONED split vs FFT split ratio: {repeated_split_partitioned / repeated_split_fft:.4f}")
-    print(f"FFT split vs DIRECT split ratio: {repeated_split_fft / repeated_split_direct:.4f}")
-    print(f"AUTO split vs reference best possible ratio: {repeated_split_auto / min(repeated_split_partitioned, repeated_split_fft):.4f}")
-
-
-def profile_render_loop(audio: np.ndarray, splitter):
-    """
-    Simulates a repeated render loop to represent the optimizer's workload.
-    """
-    print("\n--- Profiling Repeated Render Loop (Simulating Optimizer) ---")
-    import cProfile
-    import pstats
-
-    def render_loop():
-        for _ in range(15):
-            # simulate 15 iterations of optimizer tweaks resulting in FIR splits
-            splitter.split(audio, backend=FirBackend.AUTO)
-
-    profiler = cProfile.Profile()
-    profiler.enable()
-    render_loop()
-    profiler.disable()
-
-    stats = pstats.Stats(profiler).sort_stats('cumtime')
-    stats.print_stats(15)
-
-def main() -> None:
-    sr = 48000
+def run_benchmark(*, sample_rate: int, short_seconds: float, long_seconds: float) -> dict[str, Any]:
     rng = np.random.default_rng(29)
-    audio_long = rng.standard_normal((2, sr * 5)) * 0.1  # 5 seconds
-    audio_short = rng.standard_normal((2, 512)) * 0.1    # Short block
+    audio_long = rng.standard_normal((2, int(sample_rate * long_seconds))) * 0.1
+    audio_short = rng.standard_normal((2, int(short_seconds * sample_rate))) * 0.1
 
     low_cutoff = 250.0
     high_cutoff = 4000.0
@@ -121,19 +106,18 @@ def main() -> None:
     clear_fir_design_cache()
     cold_start = time.perf_counter()
     splitter = get_linear_phase_three_band_splitter(
-        sr,
+        sample_rate,
         low_cutoff,
         high_cutoff,
         low_taps=low_taps,
         high_taps=high_taps,
     )
     cold_elapsed = time.perf_counter() - cold_start
-    print(f"cold splitter build: {cold_elapsed * 1000.0:.3f}ms")
 
     warm_lookup = _benchmark(
         "cached splitter lookup",
         lambda: get_linear_phase_three_band_splitter(
-            sr,
+            sample_rate,
             low_cutoff,
             high_cutoff,
             low_taps=low_taps,
@@ -142,14 +126,82 @@ def main() -> None:
         iterations=200,
     )
 
-    run_benchmark_for_signal("Short Signal Scenario", audio_short, splitter, is_short=True)
-    run_benchmark_for_signal("Long Signal Scenario (5s)", audio_long, splitter, is_short=False)
+    short_summary = _signal_benchmark("Short Signal Scenario", audio_short, splitter, is_short=True)
+    long_summary = _signal_benchmark("Long Signal Scenario", audio_long, splitter, is_short=False)
 
-    cache_info = get_fir_design_cache_info()
-    print(f"\ncache info: {cache_info}")
+    return {
+        "environment": {
+            "python": platform.python_version(),
+            "platform": platform.platform(),
+        },
+        "native_state": build_module_state(
+            available=_NATIVE_FIR_AVAILABLE,
+            imported_module=_cognis_native,
+            execution_info={},
+        ),
+        "design_cache": {
+            "cold_splitter_build_ms": cold_elapsed * 1000.0,
+            "cached_lookup": warm_lookup,
+            "cache_info": get_fir_design_cache_info(),
+        },
+        "signals": {
+            "short": short_summary,
+            "long": long_summary,
+        },
+    }
 
-    # 5s signal loop profile
-    profile_render_loop(audio_long, splitter)
+
+def _print_human_summary(summary: dict[str, Any]) -> None:
+    print("=== COGNIS FIR crossover benchmark ===")
+    print(f"Environment: Python {summary['environment']['python']} on {summary['environment']['platform']}")
+    native = summary["native_state"]
+    execution = native.get("execution_info") or {}
+    print(
+        f"Native state: {native['state']} available={native['available']} imported={native['imported']}"
+        f" (selected={execution.get('selected_method')}, used_native={execution.get('used_native')}, fallback={execution.get('fallback_triggered')})"
+    )
+    print(f"Cold splitter build: {summary['design_cache']['cold_splitter_build_ms']:.3f} ms")
+    print(
+        f"Cached splitter lookup: {summary['design_cache']['cached_lookup']['avg_ms']:.3f} ms/iter over "
+        f"{summary['design_cache']['cached_lookup']['iterations']} iterations"
+    )
+
+    for signal_key in ("short", "long"):
+        signal = summary["signals"][signal_key]
+        print(f"\n{signal['label']} {tuple(signal['shape'])}")
+        print(
+            f"  reference low band: {signal['reference_low_band']['avg_ms']:.3f} ms/iter"
+        )
+        for backend_key in ("apply_fir_auto", "split_auto", "split_fft", "split_partitioned", "split_direct"):
+            result = signal[backend_key]
+            execution = result.get("execution") or {}
+            line = (
+                f"  {backend_key:<18} {result['avg_ms']:.3f} ms/iter "
+                f"(state={execution.get('state')}, selected={execution.get('execution_info', {}).get('selected_method')})"
+            )
+            if "normalized_avg_ms" in result:
+                line += f", normalized={result['normalized_avg_ms']:.3f} ms/iter"
+            print(line)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Benchmark FIR crossover paths with native-state observability.")
+    parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON only.")
+    parser.add_argument("--sample-rate", type=int, default=48_000, help="Sample rate used to synthesize benchmark audio.")
+    parser.add_argument("--short-seconds", type=float, default=512 / 48_000, help="Duration for the short-signal scenario.")
+    parser.add_argument("--long-seconds", type=float, default=5.0, help="Duration for the long-signal scenario.")
+    args = parser.parse_args()
+
+    summary = run_benchmark(
+        sample_rate=args.sample_rate,
+        short_seconds=args.short_seconds,
+        long_seconds=args.long_seconds,
+    )
+
+    if args.json:
+        print(dumps_json(to_jsonable(summary)))
+    else:
+        _print_human_summary(summary)
 
 
 if __name__ == "__main__":

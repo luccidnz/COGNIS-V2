@@ -1,5 +1,7 @@
 import numpy as np
+import pytest
 
+import cognis.dsp.dynamics as dynamics_mod
 from cognis.dsp.dynamics import MultibandDynamics
 
 
@@ -23,44 +25,72 @@ def test_multiband_dynamics_reuses_cached_splitter_configuration():
     assert first._splitter is second._splitter
 
 
-def test_multiband_dynamics_native_fallback_and_equivalence(monkeypatch):
-    from cognis.dsp import dynamics
-
+def test_multiband_dynamics_python_only_when_native_unavailable(monkeypatch):
     rng = np.random.default_rng(12)
     audio = rng.standard_normal((2, 24000)) * 0.15
     md = MultibandDynamics(48000)
 
-    # If native is available, let's run it once natively and once forcing python
-    if dynamics._NATIVE_AVAILABLE:
-        # Run Native
-        out_native = md.process(audio, dynamics_preservation=0.4)
-        assert md.last_execution_info["used_native"] is True
-        assert md.last_execution_info["fallback_triggered"] is False
+    monkeypatch.setattr(dynamics_mod, "_NATIVE_AVAILABLE", False)
 
-        # Run Python
-        monkeypatch.setattr(dynamics, "_NATIVE_AVAILABLE", False)
-        out_python = md.process(audio, dynamics_preservation=0.4)
-        assert md.last_execution_info["used_native"] is False
-        assert md.last_execution_info["fallback_triggered"] is False
+    first = md.process(audio, dynamics_preservation=0.4)
+    second = md.process(audio, dynamics_preservation=0.4)
 
-        # Output must be numerically equivalent
-        assert np.allclose(out_native, out_python, atol=1e-12)
+    assert md.last_execution_info["used_native"] is False
+    assert md.last_execution_info["fallback_triggered"] is False
+    assert md.last_execution_info["execution_state"] == "python_reference_native_unavailable"
+    assert md.last_execution_info["native_available"] is False
+    assert md.last_execution_info["module_imported"] is True
+    assert np.allclose(first, second, atol=1e-12)
+    assert np.isfinite(first).all()
 
-        # Test default strict failure handling when native throws
-        monkeypatch.setattr(dynamics, "_NATIVE_AVAILABLE", True)
 
-        def mock_compute_gain(*args, **kwargs):
-            raise RuntimeError("Mock Native Failure")
+@pytest.mark.skipif(not dynamics_mod._NATIVE_AVAILABLE, reason="Native dynamics helper is not available")
+def test_multiband_dynamics_native_matches_python(monkeypatch):
+    rng = np.random.default_rng(13)
+    audio = rng.standard_normal((2, 24000)) * 0.15
+    md = MultibandDynamics(48000)
 
-        monkeypatch.setattr(dynamics.cognis_native, "compute_native_compressor_gain", mock_compute_gain)
+    out_native = md.process(audio, dynamics_preservation=0.4)
+    assert md.last_execution_info["used_native"] is True
+    assert md.last_execution_info["fallback_triggered"] is False
+    assert md.last_execution_info["execution_state"] == "native_imported_and_used"
 
-        import pytest
-        with pytest.raises(RuntimeError, match="Native dynamics execution failed: Mock Native Failure"):
-            md.process(audio, dynamics_preservation=0.4)
+    monkeypatch.setattr(dynamics_mod, "_NATIVE_AVAILABLE", False)
+    out_python = md.process(audio, dynamics_preservation=0.4)
+    assert md.last_execution_info["used_native"] is False
+    assert md.last_execution_info["fallback_triggered"] is False
+    assert md.last_execution_info["execution_state"] == "python_reference_native_unavailable"
 
-        # Test explicit fallback handling when explicitly enabled
-        monkeypatch.setattr(dynamics, "_FALLBACK_ON_NATIVE_FAILURE", True)
-        out_fallback = md.process(audio, dynamics_preservation=0.4)
-        assert md.last_execution_info["used_native"] is False
-        assert md.last_execution_info["fallback_triggered"] is True
-        assert np.allclose(out_fallback, out_python, atol=1e-12)
+    np.testing.assert_allclose(out_native, out_python, atol=1e-12)
+
+
+@pytest.mark.skipif(not dynamics_mod._NATIVE_AVAILABLE, reason="Native dynamics helper is not available")
+def test_multiband_dynamics_native_failure_semantics(monkeypatch):
+    rng = np.random.default_rng(14)
+    audio = rng.standard_normal((2, 24000)) * 0.15
+    md = MultibandDynamics(48000)
+
+    monkeypatch.setattr(dynamics_mod, "_NATIVE_AVAILABLE", False)
+    out_python = md.process(audio, dynamics_preservation=0.4)
+    assert md.last_execution_info["used_native"] is False
+    assert md.last_execution_info["fallback_triggered"] is False
+
+    monkeypatch.setattr(dynamics_mod, "_NATIVE_AVAILABLE", True)
+
+    def mock_compute_gain(*args, **kwargs):
+        raise RuntimeError("Mock Native Failure")
+
+    monkeypatch.setattr(dynamics_mod.cognis_native, "compute_native_compressor_gain", mock_compute_gain)
+
+    with pytest.raises(RuntimeError, match="Native dynamics execution failed: Mock Native Failure"):
+        md.process(audio, dynamics_preservation=0.4)
+
+    assert md.last_execution_info["used_native"] is False
+    assert md.last_execution_info["fallback_triggered"] is False
+
+    monkeypatch.setattr(dynamics_mod, "_FALLBACK_ON_NATIVE_FAILURE", True)
+    out_fallback = md.process(audio, dynamics_preservation=0.4)
+    assert md.last_execution_info["used_native"] is False
+    assert md.last_execution_info["fallback_triggered"] is True
+    assert md.last_execution_info["execution_state"] == "python_fallback_after_native_failure"
+    np.testing.assert_allclose(out_fallback, out_python, atol=1e-12)

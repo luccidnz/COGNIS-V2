@@ -27,6 +27,8 @@ Install the package and development dependencies:
 pip install -e .[dev]
 ```
 
+That editable install is the canonical bootstrap path. It pulls in the Python test tooling and the native build helper dependency (`pybind11`) so the validation script does not require a separate manual `pybind11` install.
+
 ## How to Run Tests
 
 Run the test suite from the repository root:
@@ -36,12 +38,32 @@ pytest -q
 
 *Note: The `pyproject.toml` includes a `pythonpath = ["."]` configuration. This is intentional and allows you to run `pytest` directly from a fresh checkout without needing to run `pip install -e .` first.*
 
+For an editable install sanity check, run:
+```bash
+python -m pip install -e ".[dev]"
+python -m pip check
+```
+
 For a lightweight FIR crossover validation/benchmark, run:
 ```bash
 python -m scripts.benchmark_fir_crossover
 ```
 
-The benchmark reports cold splitter build time, cached lookup overhead, the optimized FIR execution path, a reference per-channel FFT path, and repeated split timings across short and long signals.
+The benchmark now reports native availability/import/use state, cold splitter build time, cached lookup overhead, the optimized FIR execution path, a reference per-channel FFT path, and repeated split timings across short and long signals. Add `--json` for machine-readable output.
+
+For a broader render-loop profiling pass, run:
+```bash
+python -m scripts.benchmark_render_loop
+```
+
+That command reports the FIR, dynamics, and limiter native-state summary alongside component timings and the overall render-loop timing. It also accepts `--json`.
+
+For the limiter helper micro-benchmark, run:
+```bash
+python -m scripts.benchmark_limiter_helpers
+```
+
+It reports Python-vs-native smoothing timings, skips native-only paths cleanly when the extension is unavailable, and accepts `--json`.
 
 ## FIR Backend Options
 
@@ -70,7 +92,7 @@ The repository includes an optional high-performance C++ DSP core via `pybind11`
 - **Optionality:** Native support is strictly optional. Normal Python workflows will not require compilation, and missing native support is gracefully handled.
 - **Capabilities:** The native backend implements highly-optimized paths for `FFT` and `PARTITIONED` FIR convolution, a dedicated helper for recursive envelope tracking inside Multiband Dynamics, and a fused hold + Gaussian smoothing path for the Limiter. The C++ helpers remove significant Python-side loop overhead and are recommended for standard repeated rendering scenarios.
 - **Reference Spec:** The Python implementations (e.g., in `fir_executor.py` and `dynamics.py`) remain the absolute behavioral reference. Native implementations must prove equivalence down to floating point margins.
-- **Build/Discovery:** The build process heavily prefers finding standard python development tools (`find_package(Python COMPONENTS Interpreter Development REQUIRED)`) and a standard `pybind11` install (`find_package(pybind11 CONFIG)`) to prevent network brittleness, keeping `FetchContent` as a strictly documented last resort.
+- **Build/Discovery:** The build process heavily prefers finding standard python development tools (`find_package(Python COMPONENTS Interpreter Development REQUIRED)`) and a standard `pybind11` install (`find_package(pybind11 CONFIG)`) to prevent network brittleness, keeping `FetchContent` as a strictly documented last resort. The editable development install (`pip install -e .[dev]`) is the supported bootstrap path for the native validation flow.
 - **Fallback Behavior:** If the native module is absent, the execution safely falls back to Python. If the native module is present but an unsupported backend mode is selected (e.g. `DIRECT`), it explicitly falls back to Python. Fallback on explicit runtime failure is strictly controlled by `_FALLBACK_ON_NATIVE_FAILURE` and is disabled by default to maintain deterministic trust.
 - **Error Handling:** If the native runtime fails unexpectedly, it will throw an explicit `RuntimeError` by default. Silent native failure swallowing is disabled.
 - **Compile Flags:** The native module strictly avoids aggressive non-deterministic compiler optimizations (like `-ffast-math`) by default to ensure DSP correctness.
@@ -80,12 +102,12 @@ The repository includes an optional high-performance C++ DSP core via `pybind11`
 Successful native validation expects the following to be installed and available:
 - Python development headers and tools (e.g., `python3-dev`)
 - `cmake`
-- `pybind11` **installed directly in the active Python environment** (`pip install pybind11`)
+- `pybind11` available after the editable development install (`pip install -e .[dev]`)
 
-**Important Environment Note:** Missing `pybind11` or other build tools is an **environment/setup issue**, not a **DSP algorithm failure**. If `pybind11` is missing from the active Python environment, the native build will fail or skip, causing the system to fall back to Python. Always ensure the native module is built and importable in the *same* Python environment used for validation to avoid misinterpreting environment failures as algorithmic ones.
+**Important Environment Note:** Missing `pybind11` or other build tools is an **environment/setup issue**, not a **DSP algorithm failure**. If `pybind11` is missing after the editable development install, the native validation flow will fail before CMake configuration. Always ensure the native module is built and importable in the *same* Python environment used for validation to avoid misinterpreting environment failures as algorithmic ones.
 
 ### Validation Path & Interpretation Guidance
-Run the validation script using:
+Run the validation script from a Unix-like shell such as WSL or Git Bash:
 ```bash
 ./scripts/validate_native.sh
 ```
@@ -96,6 +118,10 @@ When reviewing validation and benchmark outputs, future automated agents and hum
 - **Python fallback triggered intentionally:** The native runtime was present but explicitly handed execution back to Python due to an intentionally unsupported mode (like `DIRECT`).
 - **Unexpected Python fallback:** The native runtime failed unexpectedly and triggered the fail-loud exception (or explicit fallback if enabled).
 
+GitHub Actions includes two separate native-truth paths:
+- `CI` is the merge-gating workflow. It checks editable install sanity and runs the test suite.
+- `Native Truth` is a manual/scheduled workflow. It performs the native validation smoke check and uploads benchmark logs without gating merges on noisy performance thresholds.
+
 To build the optional native module manually, ensure you have the prerequisites installed, then run:
 ```bash
 # Provide CMake with a hint to the python environment's pybind11
@@ -103,8 +129,8 @@ CMAKE_ARGS="-Dpybind11_DIR=$(python -c 'import pybind11; print(pybind11.get_cmak
 mkdir -p cpp/build
 cd cpp/build
 cmake .. $CMAKE_ARGS
-make
-cp cognis_native*.so ../../cognis/dsp/
+cmake --build .
+export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
 ```
 
 ## Roadmap

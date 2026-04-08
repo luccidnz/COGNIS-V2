@@ -44,6 +44,31 @@ def test_execute_fir_2d_fallback_works_cleanly():
     assert info["used_native"] is False
     assert info["fallback_triggered"] is False # It wasn't a native crash fallback, just purely unsupported/unavailable so it ran pure python
     assert info["selected_method"] == "direct"
+    assert info["execution_state"] in {
+        "python_reference_native_unavailable",
+        "python_fallback_intentional_unsupported_mode",
+    }
+
+
+def test_execute_fir_2d_python_fallback_when_native_unavailable(monkeypatch):
+    rng = np.random.default_rng(101)
+    audio = rng.standard_normal((2, 2048)).astype(np.float64)
+    taps = rng.standard_normal(65).astype(np.float64)
+
+    monkeypatch.setattr(fir_exec_mod, "_NATIVE_FIR_AVAILABLE", False)
+    monkeypatch.setattr(fir_exec_mod, "_cognis_native", None)
+
+    out = execute_fir_2d(audio, taps, FirBackend.FFT)
+    info = get_fir_execution_info()
+
+    assert out.shape == audio.shape
+    assert out.dtype == np.float64
+    assert info["used_native"] is False
+    assert info["fallback_triggered"] is False
+    assert info["selected_method"] == "fft"
+    assert info["execution_state"] == "python_reference_native_unavailable"
+    np.testing.assert_allclose(out, execute_python_fir_2d(audio, taps, FirBackend.FFT), rtol=1e-12, atol=1e-12)
+
 
 @pytest.mark.skipif(not _NATIVE_FIR_AVAILABLE, reason="Native FIR extension is not available")
 def test_execute_fir_2d_observability_and_native_execution():
@@ -56,6 +81,7 @@ def test_execute_fir_2d_observability_and_native_execution():
     assert info["used_native"] is True
     assert info["fallback_triggered"] is False
     assert info["selected_method"] == "fft"
+    assert info["execution_state"] == "native_imported_and_used"
 
 @pytest.mark.skipif(not _NATIVE_FIR_AVAILABLE, reason="Native FIR extension is not available")
 def test_execute_fir_2d_native_failure_semantics():
@@ -85,6 +111,8 @@ def test_execute_fir_2d_native_failure_semantics():
     info = get_fir_execution_info()
     assert info["used_native"] is False
     assert info["fallback_triggered"] is False
+    assert info["selected_method"] == "fft"
+    assert info["execution_state"] == "unexpected_native_failure"
 
 @pytest.mark.skipif(not _NATIVE_FIR_AVAILABLE, reason="Native FIR extension is not available")
 def test_execute_fir_2d_native_failure_fallback_semantics():
@@ -105,6 +133,7 @@ def test_execute_fir_2d_native_failure_fallback_semantics():
         info = get_fir_execution_info()
         assert info["used_native"] is False
         assert info["fallback_triggered"] is True
+        assert info["execution_state"] == "python_fallback_after_native_failure"
         assert out.shape == audio.shape
     finally:
         fir_exec_mod._cognis_native.execute_native_fir_2d = original_execute

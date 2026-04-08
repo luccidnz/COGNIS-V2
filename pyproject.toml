@@ -16,6 +16,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "pybind11",
     "pytest>=7.0",
 ]
 

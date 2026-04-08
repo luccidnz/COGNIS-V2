@@ -131,9 +131,12 @@ _cognis_native = None
 _FALLBACK_ON_NATIVE_FAILURE = False
 
 _EXECUTION_INFO = {
+    "native_available": False,
+    "module_imported": False,
     "used_native": False,
     "fallback_triggered": False,
     "selected_method": "unknown",
+    "execution_state": "not_run",
 }
 
 try:
@@ -160,6 +163,15 @@ def get_fir_execution_info() -> dict[str, str | bool]:
     Useful for tests and benchmarks to prove native vs python paths.
     """
     return _EXECUTION_INFO.copy()
+
+
+def get_fir_native_status() -> dict[str, object]:
+    return {
+        "native_available": _NATIVE_FIR_AVAILABLE,
+        "module_imported": _cognis_native is not None,
+        "supported_methods": ["fft", "partitioned"] if _NATIVE_FIR_AVAILABLE else [],
+        "fallback_on_native_failure": _FALLBACK_ON_NATIVE_FAILURE,
+    }
 
 def execute_fir_2d(audio_2d: np.ndarray, taps: np.ndarray, backend: FirBackend) -> np.ndarray:
     """
@@ -192,6 +204,9 @@ def execute_fir_2d(audio_2d: np.ndarray, taps: np.ndarray, backend: FirBackend) 
     _EXECUTION_INFO["used_native"] = False
     _EXECUTION_INFO["fallback_triggered"] = False
     _EXECUTION_INFO["selected_method"] = "unknown"
+    _EXECUTION_INFO["native_available"] = _NATIVE_FIR_AVAILABLE
+    _EXECUTION_INFO["module_imported"] = _cognis_native is not None
+    _EXECUTION_INFO["execution_state"] = "not_run"
 
     # 2. Determine method (needed for AUTO resolution)
     kernel = np.asarray(taps, dtype=np.float64)
@@ -202,6 +217,11 @@ def execute_fir_2d(audio_2d: np.ndarray, taps: np.ndarray, backend: FirBackend) 
         method = backend.value
 
     _EXECUTION_INFO["selected_method"] = method
+    _EXECUTION_INFO["execution_state"] = (
+        "python_fallback_intentional_unsupported_mode"
+        if _NATIVE_FIR_AVAILABLE and method not in ["fft", "partitioned"]
+        else "python_reference_native_unavailable"
+    )
 
     # 3. Dispatch to Native if available and explicitly requested (or AUTO decides to use it)
     # Internal integer mapping for native backend
@@ -218,13 +238,16 @@ def execute_fir_2d(audio_2d: np.ndarray, taps: np.ndarray, backend: FirBackend) 
             native_id = backend_id_map.get(method, 0)
             result = _cognis_native.execute_native_fir_2d(audio_2d, taps, native_id)
             _EXECUTION_INFO["used_native"] = True
+            _EXECUTION_INFO["execution_state"] = "native_imported_and_used"
             return result
         except Exception as e:
             # Native runtime failure occurred
             if _FALLBACK_ON_NATIVE_FAILURE:
                 _EXECUTION_INFO["fallback_triggered"] = True
+                _EXECUTION_INFO["execution_state"] = "python_fallback_after_native_failure"
                 # Fall through to python execution below
             else:
+                _EXECUTION_INFO["execution_state"] = "unexpected_native_failure"
                 raise RuntimeError(f"Native FIR execution failed: {e}") from e
 
     # 4. Fallback to Python reference behavior

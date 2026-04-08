@@ -13,6 +13,9 @@ pytest-cache-files-*/
 
 # Native extensions
 *.so
+*.pyd
 
 # Build artifacts
 *.egg-info/
+build-native/
+cpp/build/

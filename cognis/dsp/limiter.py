@@ -10,10 +10,23 @@ logger = logging.getLogger(__name__)
 _FALLBACK_ON_NATIVE_FAILURE = False
 
 try:
-    import cognis.dsp.cognis_native as native
-    NATIVE_AVAILABLE = True
+    import cognis_native as native
+    NATIVE_AVAILABLE = hasattr(native, "compute_native_limiter_gain_fused")
 except ImportError:
-    NATIVE_AVAILABLE = False
+    try:
+        import cognis.dsp.cognis_native as native
+        NATIVE_AVAILABLE = hasattr(native, "compute_native_limiter_gain_fused")
+    except ImportError:
+        native = None
+        NATIVE_AVAILABLE = False
+
+
+def get_limiter_execution_info() -> dict[str, object]:
+    return {
+        "native_available": NATIVE_AVAILABLE,
+        "module_imported": native is not None,
+        "fallback_on_native_failure": _FALLBACK_ON_NATIVE_FAILURE,
+    }
 
 
 class Limiter:
@@ -59,8 +72,11 @@ class Limiter:
         sigma_samples = (release_ms / 1000.0) * fs
 
         self.last_execution_info = {
+            "native_available": NATIVE_AVAILABLE,
+            "module_imported": native is not None,
             "used_native": False,
-            "fallback_triggered": False
+            "fallback_triggered": False,
+            "execution_state": "python_reference_native_unavailable" if not NATIVE_AVAILABLE else "not_run",
         }
 
         smooth_gain = None
@@ -76,10 +92,13 @@ class Limiter:
                 # The C++ native helper operates in float64. Cast back to preserve input dtype semantics.
                 smooth_gain = smooth_gain.astype(raw_gain.dtype, copy=False)
                 self.last_execution_info["used_native"] = True
+                self.last_execution_info["execution_state"] = "native_imported_and_used"
             except Exception as e:
-                self.last_execution_info["fallback_triggered"] = True
                 if not _FALLBACK_ON_NATIVE_FAILURE:
+                    self.last_execution_info["execution_state"] = "unexpected_native_failure"
                     raise RuntimeError(f"Native limiter execution failed: {e}") from e
+                self.last_execution_info["fallback_triggered"] = True
+                self.last_execution_info["execution_state"] = "python_fallback_after_native_failure"
                 logger.warning(f"Native limiter execution failed, falling back to Python. Error: {e}")
 
         if smooth_gain is None:

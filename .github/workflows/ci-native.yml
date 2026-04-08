@@ -1,29 +1,53 @@
-name: CI Native Build Validation
+name: Native Truth
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+  workflow_dispatch: {}
+  schedule:
+    - cron: "17 3 * * 1"
 
 jobs:
-  test-native:
+  native-smoke:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-    - name: Install system dependencies for native build
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y python3-dev cmake
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -e .[dev]
-        pip install pybind11
-    - name: Run native validation script
-      run: |
-        ./scripts/validate_native.sh
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install native build prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake python3-dev
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+          python -m pip check
+      - name: Run native validation script
+        run: |
+          bash ./scripts/validate_native.sh
+
+  benchmark-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      - name: Capture benchmark output
+        run: |
+          mkdir -p benchmark-logs
+          python -m scripts.benchmark_render_loop | tee benchmark-logs/render-loop.txt
+          python -m scripts.benchmark_fir_crossover | tee benchmark-logs/fir-crossover.txt
+      - name: Upload benchmark logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: cognis-native-benchmark-logs
+          path: benchmark-logs

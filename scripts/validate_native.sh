@@ -47,8 +47,8 @@ if $PY_BIN -c "import pybind11" &> /dev/null; then
     echo "- pybind11: FOUND at $PYBIND11_DIR"
 else
     echo "FAIL: pybind11 not found in Python environment."
-    echo "Ensure your environment is set up by running: pip install -e ."
-    echo "This will install build dependencies specified in pyproject.toml."
+    echo "Ensure your environment is set up by running: pip install -e .[dev]"
+    echo "This will install the editable package, test dependencies, and native build tooling."
     exit 1
 fi
 
@@ -67,23 +67,22 @@ else
     exit 1
 fi
 
-if make; then
-    echo "Make build: SUCCESS"
+if cmake --build .; then
+    echo "CMake build: SUCCESS"
 else
-    echo "FAIL: Make build failed."
+    echo "FAIL: CMake build failed."
     exit 1
 fi
 
-# Ensure we don't accidentally commit .so files by carefully moving them
-# to the execution context but keeping .gitignore aware.
-cp cognis_native*.so ../../cognis/dsp/
+BUILD_DIR="$PWD"
+export PYTHONPATH="$BUILD_DIR${PYTHONPATH:+:$PYTHONPATH}"
 cd ../..
 
 echo ""
 echo "--- Validation Summary ---"
 
-# Check if the module actually loads in python
-if $PY_BIN -c "import cognis.dsp.cognis_native" &> /dev/null; then
+# Check if the module actually loads in python from the build directory
+if $PY_BIN -c "import cognis_native; print(cognis_native.__file__)" &> /dev/null; then
     echo "- Native module loaded: YES"
 else
     echo "FAIL: Native module built but failed to load in python."
@@ -94,18 +93,26 @@ fi
 export COGNIS_TEST_NATIVE_AVAILABLE=1
 
 echo "- Running pytest suite..."
-if pytest -q tests/; then
+if $PY_BIN -m pytest -q tests/; then
     echo "  Pytest suite: PASS"
 else
     echo "  Pytest suite: FAIL"
     exit 1
 fi
 
-echo "- Running native FIR crossover benchmark..."
-if python -m scripts.benchmark_fir_crossover; then
-    echo "  Benchmark: PASS"
+echo "- Running render-loop benchmark..."
+if $PY_BIN -m scripts.benchmark_render_loop; then
+    echo "  Render benchmark: PASS"
 else
-    echo "  Benchmark: FAIL"
+    echo "  Render benchmark: FAIL"
+    exit 1
+fi
+
+echo "- Running native FIR crossover benchmark..."
+if $PY_BIN -m scripts.benchmark_fir_crossover; then
+    echo "  FIR benchmark: PASS"
+else
+    echo "  FIR benchmark: FAIL"
     exit 1
 fi
 
