@@ -1,11 +1,25 @@
+import logging
 import numpy as np
 from scipy.signal import resample_poly
 from scipy.ndimage import gaussian_filter1d, minimum_filter1d
 from cognis.dsp.filters import apply_lowpass
 
+logger = logging.getLogger(__name__)
+
+# Native helpers are optional but must be strict if present.
+_FALLBACK_ON_NATIVE_FAILURE = False
+
+try:
+    import cognis.dsp.cognis_native as native
+    NATIVE_AVAILABLE = True
+except ImportError:
+    NATIVE_AVAILABLE = False
+
+
 class Limiter:
     def __init__(self, sr: int):
         self.sr = sr
+        self.last_execution_info = {}
         
     def process(self, audio: np.ndarray, ceiling_db: float, mode: str, oversampling: int = 1) -> np.ndarray:
         """
@@ -39,20 +53,41 @@ class Limiter:
         mask = abs_signal > ceiling_linear
         raw_gain[mask] = ceiling_linear / abs_signal[mask]
         
-        # 2. Hold the gain reduction (sustain)
-        # Widens the dips so smoothing doesn't under-reduce at the exact peak
         hold_ms = 1.5
         hold_samples = max(1, int((hold_ms / 1000.0) * fs))
-        held_gain = minimum_filter1d(raw_gain, size=hold_samples)
-        
-        # 3. Smooth the gain reduction envelope (attack / release)
-        # Gaussian filter provides a smooth, symmetric transition (quasi-lookahead)
-        # TODO(optimization): This gaussian_filter1d call is the secondary bottleneck
-        # in the DSP chain. Evaluate whether it can be replaced by cascading simpler
-        # native IIR passes or accelerated in C++ during a future phase.
         release_ms = 10.0
         sigma_samples = (release_ms / 1000.0) * fs
-        smooth_gain = gaussian_filter1d(held_gain, sigma=sigma_samples)
+
+        self.last_execution_info = {
+            "used_native": False,
+            "fallback_triggered": False
+        }
+
+        smooth_gain = None
+
+        if NATIVE_AVAILABLE:
+            try:
+                # 2 & 3. Fused hold and smoothing natively
+                smooth_gain = native.compute_native_limiter_gain_fused(
+                    np.ascontiguousarray(raw_gain),
+                    int(hold_samples),
+                    float(sigma_samples)
+                )
+                self.last_execution_info["used_native"] = True
+            except Exception as e:
+                self.last_execution_info["fallback_triggered"] = True
+                if not _FALLBACK_ON_NATIVE_FAILURE:
+                    raise RuntimeError(f"Native limiter execution failed: {e}") from e
+                logger.warning(f"Native limiter execution failed, falling back to Python. Error: {e}")
+
+        if smooth_gain is None:
+            # 2. Hold the gain reduction (sustain)
+            # Widens the dips so smoothing doesn't under-reduce at the exact peak
+            held_gain = minimum_filter1d(raw_gain, size=hold_samples)
+
+            # 3. Smooth the gain reduction envelope (attack / release)
+            # Gaussian filter provides a smooth, symmetric transition (quasi-lookahead)
+            smooth_gain = gaussian_filter1d(held_gain, sigma=sigma_samples)
         
         # 4. Guarantee ceiling is met before hard clip
         # Ensures we never overshoot due to smoothing averaging
