@@ -47,7 +47,8 @@ if $PY_BIN -c "import pybind11" &> /dev/null; then
     echo "- pybind11: FOUND at $PYBIND11_DIR"
 else
     echo "FAIL: pybind11 not found in Python environment."
-    echo "Please install it: pip install pybind11"
+    echo "Ensure your environment is set up by running: pip install -e ."
+    echo "This will install build dependencies specified in pyproject.toml."
     exit 1
 fi
 
