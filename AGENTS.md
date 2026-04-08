@@ -22,7 +22,13 @@ The project is built around three core layers:
 - **Compile Configurations**: Determinism takes precedence over risky optimization shortcuts. Compile flags like `-ffast-math` must be gated off by default.
 - **Build Reproducibility**: Dependency fetching during native builds must heavily prioritize standard configuration mechanisms (`find_package(Python ... REQUIRED)`, `find_package(pybind11 CONFIG)`) and local environments to ensure deterministic reproducibility, keeping network fetching strictly as a documented fallback. Do not hide missing native prerequisites behind magical fallback behavior.
 - **Native Verification Observability**: Validation of native functionality must not confuse native-unavailable with native-used. If native behavior was requested but python fallback triggered, verification output must make this completely explicit.
-- **Environment Failures vs DSP Algorithmic Failures**: Treat missing native prerequisites (e.g. `pybind11`, `cmake`, Python dev tools) as an environment setup issue first. Do not overclaim native failure or DSP algorithmic incorrectness if the underlying environment is simply missing `pybind11`. Explicitly distinguish between environment/setup failures (which hang or block building) and algorithmic native-DSP failures (which fail mathematical equivalence tests).
+- **Environment Failures vs DSP Algorithmic Failures**: Treat missing native prerequisites (e.g. `pybind11`, `cmake`, Python dev tools) as an environment setup issue first. Do not overclaim native failure or DSP algorithmic incorrectness if the underlying environment is simply missing `pybind11`. Explicitly distinguish between environment/setup failures (which prevent building) and algorithmic native-DSP failures (which fail mathematical equivalence tests). Native support is strictly optional for standard Python workflows.
+- **Native Execution States:** Agents investigating native paths must explicitly distinguish between:
+  1. **Native unavailable**: The C++ module wasn't built (missing `pybind11` or other build dependencies) or could not be loaded. This is an environment issue.
+  2. **Native built but not imported**: The `.so` was compiled but isn't located where the Python module expects it.
+  3. **Native imported and used**: The native module was successfully loaded and executed the DSP path.
+  4. **Python fallback triggered intentionally**: The native runtime explicitly fell back to Python because an unsupported mode or parameter was requested.
+  5. **Unexpected Python fallback**: The native runtime failed unexpectedly and triggered the fail-loud exception (or explicit fallback if enabled).
 
 ## General Engineering Principles
 - Maintain test coverage. If you introduce a new execution mode, test it, including testing for equivalent behaviors against established reference backends.

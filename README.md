@@ -67,7 +67,7 @@ python -m cognis.cli input.wav output.wav --mode STREAMING_SAFE --target_loudnes
 
 ## Native Backend Support
 The repository includes an optional high-performance C++ DSP core via `pybind11` (`cpp/` directory).
-- **Optionality:** Normal pure-Python installation and workflows will not require compilation.
+- **Optionality:** Native support is strictly optional. Normal Python workflows will not require compilation, and missing native support is gracefully handled.
 - **Capabilities:** The native backend implements highly-optimized paths for `FFT` and `PARTITIONED` FIR convolution, a dedicated helper for recursive envelope tracking inside Multiband Dynamics, and a fused hold + Gaussian smoothing path for the Limiter. The C++ helpers remove significant Python-side loop overhead and are recommended for standard repeated rendering scenarios.
 - **Reference Spec:** The Python implementations (e.g., in `fir_executor.py` and `dynamics.py`) remain the absolute behavioral reference. Native implementations must prove equivalence down to floating point margins.
 - **Build/Discovery:** The build process heavily prefers finding standard python development tools (`find_package(Python COMPONENTS Interpreter Development REQUIRED)`) and a standard `pybind11` install (`find_package(pybind11 CONFIG)`) to prevent network brittleness, keeping `FetchContent` as a strictly documented last resort.
@@ -82,18 +82,19 @@ Successful native validation expects the following to be installed and available
 - `cmake`
 - `pybind11` **installed directly in the active Python environment** (`pip install pybind11`)
 
-**Important Environment Note:** If `pybind11` is missing from the active Python environment, the native proof script can hang, time out, or appear to fail even if the underlying native DSP algorithmic logic (like FFT or PARTITIONED) is completely correct. Always ensure the native module is built and importable in the *same* Python environment used for validation to avoid misinterpreting environment failures as algorithmic ones.
+**Important Environment Note:** Missing `pybind11` or other build tools is an **environment/setup issue**, not a **DSP algorithm failure**. If `pybind11` is missing from the active Python environment, the native build will fail or skip, causing the system to fall back to Python. Always ensure the native module is built and importable in the *same* Python environment used for validation to avoid misinterpreting environment failures as algorithmic ones.
 
 ### Validation Path & Interpretation Guidance
 Run the validation script using:
 ```bash
 ./scripts/validate_native.sh
 ```
-When reviewing validation and benchmark outputs, clearly distinguish between:
-- **Native unavailable:** The C++ module wasn't built or imported successfully (e.g. environment issue).
-- **Native built but not imported:** The `.so` was compiled but isn't located where the python module expects it.
-- **Native imported and used:** The benchmark explicitly states `NATIVE` or `Proof: [Backend] executed natively`.
-- **Python fallback triggered:** The native runtime was present but explicitly handed execution back to Python due to an error or an unsupported mode.
+When reviewing validation and benchmark outputs, future automated agents and human developers must clearly distinguish between the following states:
+- **Native unavailable:** The C++ module wasn't built (e.g., due to a missing `pybind11` build dependency) or could not be loaded. This is an environment issue.
+- **Native built but not imported:** The `.so` was compiled but isn't located where the Python module expects it (e.g., a pathing issue).
+- **Native imported and used:** The native module was found, and the benchmark explicitly states `NATIVE` or `Proof: [Backend] executed natively`.
+- **Python fallback triggered intentionally:** The native runtime was present but explicitly handed execution back to Python due to an intentionally unsupported mode (like `DIRECT`).
+- **Unexpected Python fallback:** The native runtime failed unexpectedly and triggered the fail-loud exception (or explicit fallback if enabled).
 
 To build the optional native module manually, ensure you have the prerequisites installed, then run:
 ```bash
