@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include "cognis_dsp/fir_executor.hpp"
 #include "cognis_dsp/dynamics_executor.hpp"
+#include "cognis_dsp/limiter.hpp"
 
 namespace py = pybind11;
 
@@ -119,4 +120,12 @@ PYBIND11_MODULE(cognis_native, m) {
     m.doc() = "COGNIS Native DSP Module";
     m.def("execute_native_fir_2d", &execute_native_fir_2d, "Apply native FIR filter to audio");
     m.def("compute_native_compressor_gain", &compute_native_compressor_gain, "Compute native recursive envelope tracking and gain");
+
+    m.def("compute_native_limiter_gain_gaussian_only", &cognis_dsp::compute_native_limiter_gain_gaussian_only,
+          "Compute Gaussian smoothing for limiter gain (C++ accelerated)",
+          py::arg("raw_gain"), py::arg("sigma_samples"));
+
+    m.def("compute_native_limiter_gain_fused", &cognis_dsp::compute_native_limiter_gain_fused,
+          "Compute hold (minimum) and Gaussian smoothing for limiter gain (C++ accelerated)",
+          py::arg("raw_gain"), py::arg("hold_samples"), py::arg("sigma_samples"));
 }
