@@ -59,8 +59,7 @@ def test_native_vs_python_equivalence_limiter():
 
     assert limiter_native.last_execution_info["used_native"] is True
 
-    # Tolerance relaxed due to FFT convolution vs spatial correlation drift
-    np.testing.assert_allclose(processed_py, processed_nat, rtol=1e-5, atol=1e-5)
+    np.testing.assert_allclose(processed_py, processed_nat, rtol=1e-7, atol=1e-9)
 
 def test_native_limiter_strict_failure():
     import cognis.dsp.limiter as lim
@@ -116,3 +115,15 @@ def test_native_limiter_edge_cases():
 
     out2 = native.compute_native_limiter_gain_fused(np.ascontiguousarray(raw_gain), 1, 0.0)
     np.testing.assert_allclose(out2, raw_gain)
+
+def test_limiter_dtype_preservation():
+    limiter = Limiter(48000)
+    rng = np.random.default_rng(42)
+
+    audio_f32 = rng.standard_normal((2, 1000)).astype(np.float32)
+    processed_f32 = limiter.process(audio_f32, ceiling_db=-1.0, mode="PEAK")
+    assert processed_f32.dtype == np.float32
+
+    audio_f64 = rng.standard_normal((2, 1000)).astype(np.float64)
+    processed_f64 = limiter.process(audio_f64, ceiling_db=-1.0, mode="PEAK")
+    assert processed_f64.dtype == np.float64

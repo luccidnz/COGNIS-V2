@@ -73,6 +73,8 @@ class Limiter:
                     int(hold_samples),
                     float(sigma_samples)
                 )
+                # The C++ native helper operates in float64. Cast back to preserve input dtype semantics.
+                smooth_gain = smooth_gain.astype(raw_gain.dtype, copy=False)
                 self.last_execution_info["used_native"] = True
             except Exception as e:
                 self.last_execution_info["fallback_triggered"] = True
