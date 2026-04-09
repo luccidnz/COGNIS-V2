@@ -21,7 +21,7 @@ def test_analyzer_surfaces_v1_schema_metrics() -> None:
     analyzer = Analyzer()
     result = analyzer.analyze(_stereo_tone(duration_s=4.0), 48000)
 
-    assert result.schema_version == "analysis_schema_v1"
+    assert result.schema_version == "analysis_schema_v2"
     assert np.isfinite(result.loudness.integrated_loudness)
     assert np.isfinite(result.loudness.loudness_range_lu)
     assert np.isfinite(result.tonal.sub_energy_ratio)

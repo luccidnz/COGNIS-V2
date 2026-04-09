@@ -45,13 +45,11 @@ def compute_objective(analysis: AnalysisResult, targets: TargetValues) -> float:
     score += tilt_diff * 10.0
     
     # 3. Low/Mid Tonal Penalty
-    # Penalize excessive bass buildup or loss (assuming target ~0 dB difference for MVP)
-    low_mid_diff = abs(analysis.tonal.low_mid_balance_db)
+    low_mid_diff = abs(analysis.tonal.low_mid_balance_db - targets.target_low_mid_balance)
     score += low_mid_diff * 5.0
     
     # 4. High/Mid Tonal Penalty
-    # Penalize excessive harshness or dullness
-    high_mid_diff = abs(analysis.tonal.high_mid_balance_db)
+    high_mid_diff = abs(analysis.tonal.high_mid_balance_db - targets.target_high_mid_balance)
     score += high_mid_diff * 5.0
     
     # 5. Crest-Factor / Dynamics Penalty
@@ -64,10 +62,34 @@ def compute_objective(analysis: AnalysisResult, targets: TargetValues) -> float:
     # Deviation from target mid-band width
     width_diff = abs(analysis.stereo.mid_band_width - targets.target_width)
     score += width_diff * 10.0
+
+    # 6b. Reference-aware low-end / side-energy guidance when available.
+    if targets.target_sub_energy_ratio > 0.0:
+        sub_energy_diff = abs(analysis.tonal.sub_energy_ratio - targets.target_sub_energy_ratio)
+        score += sub_energy_diff * 50.0
+    if targets.target_low_energy_ratio > 0.0:
+        low_energy_diff = abs(analysis.tonal.low_energy_ratio - targets.target_low_energy_ratio)
+        score += low_energy_diff * 40.0
+    if targets.target_side_energy_ratio > 0.0:
+        side_energy_diff = abs(analysis.stereo.side_energy_ratio - targets.target_side_energy_ratio)
+        score += side_energy_diff * 25.0
     
     # 7. Phase / Mono Compatibility Penalty (Soft)
     # Even if positive, we prefer higher correlation (closer to 1.0)
     mono_penalty = 1.0 - analysis.stereo.phase_correlation
     score += mono_penalty * 5.0
+
+    reference_targeting = targets.reference_targeting
+    if reference_targeting is not None:
+        reference_metrics = reference_targeting.reference_targets
+        score += abs(analysis.loudness.integrated_lufs - reference_metrics["integrated_lufs"]) * 12.0
+        score += abs(analysis.tonal.spectral_tilt_db_per_decade - reference_metrics["spectral_tilt_db_per_decade"]) * 8.0
+        score += abs(analysis.stereo.mid_band_width - reference_metrics["mid_band_width"]) * 10.0
+        score += abs(analysis.stereo.low_band_width - reference_metrics["low_band_width"]) * 10.0
+        score += abs(analysis.loudness.crest_factor_db - reference_metrics["crest_factor_db"]) * 8.0
+        score += abs(analysis.stereo.phase_correlation - reference_metrics["phase_correlation"]) * 5.0
+        score += abs(analysis.tonal.low_energy_ratio - reference_metrics["low_energy_ratio"]) * 6.0
+        score += abs(analysis.tonal.sub_energy_ratio - reference_metrics["sub_energy_ratio"]) * 6.0
+        score += abs(analysis.tonal.bass_energy_ratio - reference_metrics["bass_energy_ratio"]) * 6.0
         
     return score

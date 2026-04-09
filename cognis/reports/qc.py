@@ -6,9 +6,10 @@ from typing import Any
 from cognis.analysis.features import AnalysisResult
 from cognis.config import CeilingMode, MasteringConfig
 from cognis.optimizer.targets import TargetValues
+from cognis.reports.reference import ReferenceAssessment, build_reference_assessment, render_reference_markdown_section
 
 
-REPORT_SCHEMA_VERSION = "report_schema_v1"
+REPORT_SCHEMA_VERSION = "report_schema_v2"
 
 SEVERITY_PASS = "pass"
 SEVERITY_INFO = "informational"
@@ -101,6 +102,7 @@ class ReportResult:
     findings: tuple[QCFinding, ...]
     summary: tuple[ChangeBullet, ...]
     overall_status: str
+    reference_assessment: ReferenceAssessment | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -108,6 +110,12 @@ class ReportResult:
     @property
     def status(self) -> str:
         return self.overall_status
+
+    @property
+    def reference_status(self) -> str | None:
+        if self.reference_assessment is None:
+            return None
+        return self.reference_assessment.outcome
 
     @property
     def integrated_loudness(self) -> float:
@@ -188,7 +196,7 @@ def _build_delta(
 ) -> TargetDelta:
     codec_reference_ceiling = min(config.ceiling_db, -1.0) if config.ceiling_mode == CeilingMode.CODEC_SAFE else -1.0
     return TargetDelta(
-        loudness_delta_lu=output_analysis.loudness.integrated_lufs - config.target_loudness,
+        loudness_delta_lu=output_analysis.loudness.integrated_lufs - targets.target_loudness,
         true_peak_margin_db=config.ceiling_db - output_analysis.loudness.true_peak_dbfs,
         sample_peak_margin_db=0.0 - output_analysis.loudness.sample_peak_dbfs,
         codec_safety_margin_db=codec_reference_ceiling - output_analysis.loudness.true_peak_dbfs,
@@ -462,6 +470,7 @@ def _build_summary(
     delta: TargetDelta,
     overall_status: str,
     findings: tuple[QCFinding, ...],
+    reference_assessment: ReferenceAssessment | None = None,
 ) -> tuple[ChangeBullet, ...]:
     bullets: list[ChangeBullet] = []
     finding_codes = {finding.code for finding in findings}
@@ -502,6 +511,11 @@ def _build_summary(
     else:
         bullets.append(ChangeBullet("safety", "Render stayed within the measured release-safety constraints."))
 
+    if reference_assessment is not None:
+        progress = reference_assessment.summary
+        for bullet in progress:
+            bullets.append(ChangeBullet(f"reference:{bullet.category}", bullet.message))
+
     return tuple(bullets)
 
 
@@ -519,13 +533,17 @@ def build_report(
     targets: TargetValues,
     input_analysis: AnalysisResult,
     output_analysis: AnalysisResult,
+    reference_analysis: AnalysisResult | None = None,
 ) -> ReportResult:
     requested = _build_requested(config)
     achieved = _build_achieved(output_analysis)
     delta = _build_delta(config, targets, input_analysis, output_analysis)
     findings = _evaluate_findings(config, targets, input_analysis, output_analysis, delta)
     overall_status = _overall_status(findings)
-    summary = _build_summary(input_analysis, output_analysis, delta, overall_status, findings)
+    reference_assessment = None
+    if reference_analysis is not None:
+        reference_assessment = build_reference_assessment(config, targets, input_analysis, reference_analysis, output_analysis)
+    summary = _build_summary(input_analysis, output_analysis, delta, overall_status, findings, reference_assessment)
 
     return ReportResult(
         schema_version=REPORT_SCHEMA_VERSION,
@@ -537,6 +555,7 @@ def build_report(
         findings=findings,
         summary=summary,
         overall_status=overall_status,
+        reference_assessment=reference_assessment,
     )
 
 
@@ -569,6 +588,9 @@ def render_report_markdown(report: ReportResult) -> str:
     for bullet in report.summary:
         lines.append(f"- {bullet.message}")
 
+    if report.reference_assessment is not None:
+        lines.extend([""] + render_reference_markdown_section(report.reference_assessment))
+
     lines.extend(["", "## QC Findings", ""])
     for finding in report.findings:
         lines.append(f"- `{finding.severity}` `{finding.code}`: {finding.message}")
@@ -585,9 +607,10 @@ def generate_qc_report(
     output_analysis: AnalysisResult,
     config: MasteringConfig,
     targets: TargetValues,
-    recipe_schema_version: str = "recipe_v1",
+    recipe_schema_version: str = "recipe_v2",
+    reference_analysis: AnalysisResult | None = None,
 ) -> QCReport:
-    return build_report(config, recipe_schema_version, targets, input_analysis, output_analysis)
+    return build_report(config, recipe_schema_version, targets, input_analysis, output_analysis, reference_analysis)
 
 
 def format_report_markdown(report: QCReport) -> str:

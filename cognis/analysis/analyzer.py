@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 
 from cognis.analysis.features import (
@@ -87,7 +89,14 @@ class Analyzer:
         self.schema_version = ANALYSIS_SCHEMA_VERSION
         self.analyzer_version = ANALYZER_VERSION
 
-    def analyze(self, audio: np.ndarray, sr: int) -> AnalysisResult:
+    def analyze(
+        self,
+        audio: np.ndarray,
+        sr: int,
+        *,
+        role: str = "analysis",
+        source_path: str | None = None,
+    ) -> AnalysisResult:
         """
         Analyze audio and return structured, deterministic features.
         Audio must be shaped (channels, samples).
@@ -149,6 +158,9 @@ class Analyzer:
             channels=int(audio.shape[0]),
             samples=int(audio.shape[1]),
             duration_s=float(audio.shape[1] / sr),
+            role=role,
+            source_path=source_path,
+            source_name=Path(source_path).name if source_path else None,
         )
 
         return AnalysisResult(

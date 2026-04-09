@@ -14,7 +14,7 @@
     "spectral_tilt_db_per_decade": 0.8,
     "true_peak_dbfs": -1.3
   },
-  "analysis_schema_version": "analysis_schema_v1",
+  "analysis_schema_version": "analysis_schema_v2",
   "delta": {
     "codec_safety_margin_db": 0.30000000000000004,
     "crest_factor_delta_db": -0.5,
@@ -133,7 +133,8 @@
     }
   ],
   "overall_status": "pass",
-  "recipe_schema_version": "recipe_v1",
+  "recipe_schema_version": "recipe_v2",
+  "reference_assessment": null,
   "requested": {
     "bass_preservation": 0.9,
     "brightness": 0.1,
@@ -147,7 +148,7 @@
     "stereo_width": 1.0,
     "target_loudness_lufs": -14.0
   },
-  "schema_version": "report_schema_v1",
+  "schema_version": "report_schema_v2",
   "summary": [
     {
       "category": "loudness",

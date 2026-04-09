@@ -3,11 +3,17 @@ from __future__ import annotations
 import json
 from dataclasses import asdict, is_dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
-from cognis.engine import RenderResult
+from cognis.serialization.analysis_artifacts import (
+    analysis_artifact_path,
+    build_analysis_artifact,
+)
 from cognis.reports.qc import render_report_markdown
 from cognis.serialization.recipe import serialize_recipe
+
+if TYPE_CHECKING:
+    from cognis.engine import RenderResult
 
 
 def _normalize(payload: Any) -> Any:
@@ -26,6 +32,14 @@ def serialize_report(report: Any) -> str:
     return json.dumps(_normalize(report), indent=2, sort_keys=True) + "\n"
 
 
+def serialize_analysis_artifact(artifact: Any) -> str:
+    return json.dumps(_normalize(artifact), indent=2, sort_keys=True) + "\n"
+
+
+def _analysis_payload(value: Any) -> Any:
+    return getattr(value, "analysis", value)
+
+
 def write_render_artifacts(
     render_result: RenderResult,
     output_path: str,
@@ -33,6 +47,7 @@ def write_render_artifacts(
     *,
     write_recipe: bool = True,
     write_analysis: bool = True,
+    reference_analysis: Any | None = None,
     write_report: bool = True,
     write_markdown_report: bool = False,
 ) -> dict[str, str]:
@@ -49,12 +64,45 @@ def write_render_artifacts(
         written["recipe"] = str(path)
 
     if write_analysis:
-        input_path = artifact_root / f"{stem}.analysis.input.json"
-        output_analysis_path = artifact_root / f"{stem}.analysis.output.json"
-        input_path.write_text(serialize_analysis(render_result.input_analysis), encoding="utf-8")
-        output_analysis_path.write_text(serialize_analysis(render_result.output_analysis), encoding="utf-8")
+        input_artifact = build_analysis_artifact(
+            render_result.input_analysis,
+            role="input",
+            artifact_stem=stem,
+            source_label="input",
+        )
+        output_artifact = build_analysis_artifact(
+            render_result.output_analysis,
+            role="output",
+            artifact_stem=stem,
+            source_label="output",
+            source_path=str(output),
+        )
+        input_path = analysis_artifact_path(artifact_root, stem, "input")
+        output_analysis_path = analysis_artifact_path(artifact_root, stem, "output")
+        input_path.write_text(serialize_analysis_artifact(input_artifact), encoding="utf-8")
+        output_analysis_path.write_text(serialize_analysis_artifact(output_artifact), encoding="utf-8")
         written["analysis_input"] = str(input_path)
         written["analysis_output"] = str(output_analysis_path)
+
+        if reference_analysis is None:
+            reference_analysis = getattr(render_result, "reference_analysis", None)
+
+        if reference_analysis is not None:
+            reference_source_path = None
+            if isinstance(getattr(render_result, "recipe", None), dict):
+                config = render_result.recipe.get("config", {})
+                reference_source_path = config.get("reference_path")
+
+            reference_artifact = build_analysis_artifact(
+                _analysis_payload(reference_analysis),
+                role="reference",
+                artifact_stem=stem,
+                source_label="reference",
+                source_path=reference_source_path,
+            )
+            reference_path = analysis_artifact_path(artifact_root, stem, "reference")
+            reference_path.write_text(serialize_analysis_artifact(reference_artifact), encoding="utf-8")
+            written["analysis_reference"] = str(reference_path)
 
     if write_report:
         report_path = artifact_root / f"{stem}.report.json"

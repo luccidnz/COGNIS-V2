@@ -4,8 +4,8 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 
-ANALYSIS_SCHEMA_VERSION = "analysis_schema_v1"
-ANALYZER_VERSION = "cognis_analyzer_v1"
+ANALYSIS_SCHEMA_VERSION = "analysis_schema_v2"
+ANALYZER_VERSION = "cognis_analyzer_v2"
 
 
 @dataclass(frozen=True)
@@ -16,6 +16,9 @@ class AnalysisIdentity:
     channels: int
     samples: int
     duration_s: float
+    role: str = "analysis"
+    source_path: str | None = None
+    source_name: str | None = None
 
 
 @dataclass(frozen=True)

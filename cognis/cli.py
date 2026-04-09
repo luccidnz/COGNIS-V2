@@ -12,6 +12,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="COGNIS Mastering Engine CLI")
     parser.add_argument("input", help="Input audio file")
     parser.add_argument("output", help="Output audio file")
+    parser.add_argument("--reference", type=str, default=None, help="Optional reference audio file")
     parser.add_argument("--mode", type=str, default="STREAMING_SAFE", help="Mastering mode")
     parser.add_argument("--target_loudness", type=float, default=-14.0, help="Target loudness (LUFS)")
     parser.add_argument("--ceiling_db", type=float, default=-1.0, help="Ceiling (dBFS)")
@@ -43,15 +44,22 @@ def main() -> None:
         stereo_width=1.0,
         dynamics_preservation=1.0,
         brightness=0.0,
+        reference_path=args.reference,
         fir_backend="AUTO",
     )
 
     print(f"Loading {args.input}...")
     audio, sr = load_audio(args.input)
 
+    reference_audio = None
+    reference_sr = None
+    if args.reference:
+        print(f"Loading reference {args.reference}...")
+        reference_audio, reference_sr = load_audio(args.reference)
+
     print("Running COGNIS engine...")
     engine = Engine()
-    result = engine.render(audio, sr, config)
+    result = engine.render(audio, sr, config, reference_audio=reference_audio, reference_sr=reference_sr)
 
     print(f"Saving {args.output}...")
     save_audio(args.output, result.audio, sr)
@@ -64,6 +72,7 @@ def main() -> None:
             artifacts_dir=args.artifacts_dir,
             write_recipe=True,
             write_analysis=True,
+            reference_analysis=result.reference_analysis,
             write_report=True,
             write_markdown_report=args.write_markdown_report,
         )
@@ -72,11 +81,14 @@ def main() -> None:
     print("\n--- QC Summary ---")
     print(f"Overall Status:      {report.overall_status}")
     print(f"Target Loudness:     {report.requested.target_loudness_lufs:.2f} LUFS")
+    print(f"Active Target:       {result.targets.target_loudness:.2f} LUFS")
     print(f"Achieved Loudness:   {report.achieved.integrated_lufs:.2f} LUFS")
     print(f"Loudness Delta:      {report.delta.loudness_delta_lu:+.2f} LU")
     print(f"True Peak:           {report.achieved.true_peak_dbfs:.2f} dBFS")
     print(f"Ceiling Margin:      {report.delta.true_peak_margin_db:.2f} dB")
     print(f"Warnings / Fails:    {sum(f.severity == 'warning' for f in report.findings)} / {sum(f.severity == 'fail' for f in report.findings)}")
+    if report.reference_assessment is not None:
+        print(f"Reference Outcome:   {report.reference_assessment.outcome}")
     print("------------------\n")
 
     if written:

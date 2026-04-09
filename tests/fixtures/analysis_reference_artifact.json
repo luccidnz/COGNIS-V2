@@ -3,12 +3,12 @@
     "analyzer_version": "cognis_analyzer_v2",
     "channels": 2,
     "duration_s": 5.0,
-    "role": "analysis",
+    "role": "reference",
     "sample_rate_hz": 48000,
     "samples": 240000,
     "schema_version": "analysis_schema_v2",
-    "source_name": null,
-    "source_path": null
+    "source_name": "reference",
+    "source_path": "references/reference.wav"
   },
   "loudness": {
     "crest_factor_db": 7.0,
@@ -17,7 +17,7 @@
     "momentary_max_lufs": -9.0,
     "momentary_mean_lufs": -13.2,
     "momentary_min_lufs": -16.2,
-    "peak_to_loudness_ratio_lu": 12.899999999999999,
+    "peak_to_loudness_ratio_lu": 12.9,
     "sample_peak_dbfs": -1.6,
     "short_term_max_lufs": -12.1,
     "short_term_mean_lufs": -13.7,

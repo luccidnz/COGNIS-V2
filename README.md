@@ -85,6 +85,11 @@ To also emit a human-readable markdown report:
 python -m cognis.cli input.wav output.wav --mode STREAMING_SAFE --target_loudness -14.0 --ceiling_db -1.0 --write-markdown-report
 ```
 
+To run a reference-aware render:
+```bash
+python -m cognis.cli input.wav output.wav --reference reference.wav --mode REFERENCE_MATCH --write-markdown-report
+```
+
 To write artifacts into a dedicated directory:
 ```bash
 python -m cognis.cli input.wav output.wav --artifacts-dir build-artifacts
@@ -99,21 +104,28 @@ The canonical CLI render path now writes deterministic artifacts alongside the m
 - `output.recipe.json`
 - `output.analysis.input.json`
 - `output.analysis.output.json`
+- `output.analysis.reference.json` when `--reference` is supplied
 - `output.report.json`
 - `output.report.md` when markdown output is requested
 
 ## Analyzer / QC / Report Artifacts
 
-The render pipeline now exposes three versioned artifacts:
-- `analysis_schema_v1`: structured post-render analysis including loudness, tonal balance, stereo, and delivery-risk proxies.
-- `report_schema_v1`: requested-vs-achieved deltas, QC findings, and concise "what changed" bullets.
-- `recipe_v1`: chosen DSP parameters plus the derived target values and gain staging context used for the render.
+The render pipeline now exposes four versioned artifacts:
+- `analysis_schema_v2`: structured post-render analysis including loudness, tonal balance, stereo, and delivery-risk proxies, plus deterministic role/source metadata.
+- `report_schema_v2`: requested-vs-achieved deltas, QC findings, reference assessment, and concise "what changed" bullets.
+- `recipe_v2`: chosen DSP parameters plus the derived target values, reference-aware targeting, and gain staging context used for the render.
+- `reference_assessment_schema_v1`: nested input-vs-reference and output-vs-reference comparisons with reference-aware QC language.
 
 QC findings are intentionally severity-based rather than boolean-only:
 - `pass`: no blocking issue detected under the current checks
 - `informational`: context only
 - `warning`: review recommended before release
 - `fail`: not release-ready under the measured constraints
+
+Reference-aware renders keep safety and reference comparison separate:
+- the top-level QC findings still describe release safety and target misses
+- the nested reference assessment explains how the render differs from the reference and where safety limits remained in effect
+- the report language is grounded in measured loudness, tilt, width, crest-factor, and phase-correlation deltas
 
 See [docs/analyzer_qc_reporting.md](docs/analyzer_qc_reporting.md) for schema and usage details.
 
@@ -173,5 +185,5 @@ export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
 ## Roadmap
 - Refine the Limiter and Dynamics modules (e.g., implement a true lookahead envelope-based limiter with smarter release handling).
 - Refine BS.1770 loudness measurement to full compliance.
-- Expand the report layer with reference-track deltas and richer delivery-profile presets built on the current analyzer/QC artifacts.
+- Expand delivery-profile presets and reference-aware style templates on top of the new reference artifacts.
 - Develop ML models for style encoding and preference ranking.

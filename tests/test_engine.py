@@ -36,10 +36,12 @@ def test_engine_render_emits_first_class_artifacts():
     result = engine.render(_make_audio(), 48000, _make_config())
 
     assert result.audio.shape == _make_audio().shape
-    assert result.recipe["schema_version"] == "recipe_v1"
-    assert result.input_analysis.schema_version == "analysis_schema_v1"
-    assert result.output_analysis.schema_version == "analysis_schema_v1"
-    assert result.report.schema_version == "report_schema_v1"
+    assert result.recipe["schema_version"] == "recipe_v2"
+    assert result.input_analysis.schema_version == "analysis_schema_v2"
+    assert result.output_analysis.schema_version == "analysis_schema_v2"
+    assert result.reference_analysis is None
+    assert result.targets.reference_targeting is None
+    assert result.report.schema_version == "report_schema_v2"
     assert result.report.findings
 
 
@@ -48,8 +50,8 @@ def test_engine_process_remains_compatible():
     mastered, report, recipe = engine.process(_make_audio(), 48000, _make_config())
 
     assert mastered.shape == _make_audio().shape
-    assert report.schema_version == "report_schema_v1"
-    assert recipe["schema_version"] == "recipe_v1"
+    assert report.schema_version == "report_schema_v2"
+    assert recipe["schema_version"] == "recipe_v2"
 
 
 def test_engine_render_is_deterministic_for_same_input():
@@ -101,3 +103,39 @@ def test_artifact_writer_writes_expected_files():
     assert set(written) == {"recipe", "analysis_input", "analysis_output", "report", "report_markdown"}
     for path in written.values():
         assert Path(path).exists()
+
+
+def test_engine_render_with_reference_emits_reference_artifacts():
+    engine = Engine()
+    audio = _make_audio()
+    reference_audio = audio * 0.9
+    config = _make_config()
+    config.mode = MasteringMode.REFERENCE_MATCH
+    config.reference_path = "reference.wav"
+
+    result = engine.render(audio, 48000, config, reference_audio=reference_audio, reference_sr=48000)
+
+    assert result.reference_analysis is not None
+    assert result.reference_analysis.identity.role == "reference"
+    assert result.targets.reference_targeting is not None
+    assert result.report.reference_status in {"constrained", "partial", "matched", "deviated"}
+    assert result.report.reference_assessment is not None
+    assert result.report.reference_assessment.reference_analysis_schema_version == "analysis_schema_v2"
+
+    artifact_root = Path(".tmp") / "test-reference-artifact-writer"
+    if artifact_root.exists():
+        shutil.rmtree(artifact_root)
+    artifact_root.mkdir(parents=True, exist_ok=True)
+
+    written = write_render_artifacts(
+        result,
+        str(artifact_root / "master.wav"),
+        write_recipe=True,
+        write_analysis=True,
+        reference_analysis=result.reference_analysis,
+        write_report=True,
+        write_markdown_report=True,
+    )
+
+    assert "analysis_reference" in written
+    assert Path(written["analysis_reference"]).exists()

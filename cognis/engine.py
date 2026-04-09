@@ -17,7 +17,7 @@ from cognis.optimizer.targets import TargetValues, build_targets
 from cognis.reports.qc import ReportResult, build_report
 
 
-RECIPE_SCHEMA_VERSION = "recipe_v1"
+RECIPE_SCHEMA_VERSION = "recipe_v2"
 
 
 @dataclass(frozen=True)
@@ -26,6 +26,8 @@ class RenderResult:
     recipe: dict[str, Any]
     input_analysis: AnalysisResult
     output_analysis: AnalysisResult
+    reference_analysis: AnalysisResult | None
+    targets: TargetValues
     report: ReportResult
 
     @property
@@ -65,7 +67,7 @@ class Engine:
         )
         return audio
 
-    def _compute_gain_staging(self, input_analysis: AnalysisResult, config: MasteringConfig) -> tuple[float, float]:
+    def _compute_gain_staging(self, input_analysis: AnalysisResult, target_loudness: float) -> tuple[float, float]:
         input_tp = input_analysis.loudness.true_peak_dbfs
         input_lufs = input_analysis.loudness.integrated_lufs
 
@@ -74,7 +76,7 @@ class Engine:
 
         trim_gain_db = -6.0 - input_tp
         trimmed_lufs = input_lufs + trim_gain_db
-        raw_makeup_gain = config.target_loudness - trimmed_lufs
+        raw_makeup_gain = target_loudness - trimmed_lufs
         makeup_gain_db = float(np.clip(raw_makeup_gain, -24.0, 24.0))
         return trim_gain_db, makeup_gain_db
 
@@ -101,6 +103,12 @@ class Engine:
                 "target_width": targets.target_width,
                 "target_crest_factor": targets.target_crest_factor,
                 "target_low_band_width": targets.target_low_band_width,
+                "target_low_mid_balance": targets.target_low_mid_balance,
+                "target_high_mid_balance": targets.target_high_mid_balance,
+                "target_sub_energy_ratio": targets.target_sub_energy_ratio,
+                "target_low_energy_ratio": targets.target_low_energy_ratio,
+                "target_side_energy_ratio": targets.target_side_energy_ratio,
+                "reference_targeting": asdict(targets.reference_targeting) if targets.reference_targeting else None,
             },
             "render_context": {
                 "trim_gain_db": trim_gain_db,
@@ -112,30 +120,63 @@ class Engine:
                     "target_width": targets.target_width,
                     "target_crest_factor": targets.target_crest_factor,
                     "target_low_band_width": targets.target_low_band_width,
+                    "target_low_mid_balance": targets.target_low_mid_balance,
+                    "target_high_mid_balance": targets.target_high_mid_balance,
+                    "target_sub_energy_ratio": targets.target_sub_energy_ratio,
+                    "target_low_energy_ratio": targets.target_low_energy_ratio,
+                    "target_side_energy_ratio": targets.target_side_energy_ratio,
+                    "reference_targeting": asdict(targets.reference_targeting) if targets.reference_targeting else None,
                 },
             },
         }
 
-    def render(self, audio: np.ndarray, sr: int, config: MasteringConfig) -> RenderResult:
+    def render(
+        self,
+        audio: np.ndarray,
+        sr: int,
+        config: MasteringConfig,
+        *,
+        reference_audio: np.ndarray | None = None,
+        reference_sr: int | None = None,
+    ) -> RenderResult:
         """Run the canonical mastering flow and return all deterministic artifacts."""
-        input_analysis = self.analyzer.analyze(audio, sr)
-        trim_gain_db, makeup_gain_db = self._compute_gain_staging(input_analysis, config)
-        targets = build_targets(config)
+        input_analysis = self.analyzer.analyze(audio, sr, role="input")
+        reference_analysis = None
+        if reference_audio is not None:
+            if reference_sr is None:
+                raise ValueError("reference_sr must be supplied when reference_audio is provided")
+            reference_analysis = self.analyzer.analyze(
+                reference_audio,
+                reference_sr,
+                role="reference",
+                source_path=config.reference_path,
+            )
+        targets = build_targets(config, input_analysis=input_analysis, reference_analysis=reference_analysis)
+        trim_gain_db, makeup_gain_db = self._compute_gain_staging(input_analysis, targets.target_loudness)
 
         def render_fn(aud: np.ndarray, params: dict[str, float]) -> np.ndarray:
             return self._render_chain(aud, sr, params, config, trim_gain_db, makeup_gain_db)
 
         best_params = grid_search(audio, sr, targets, render_fn, self.analyzer)
         mastered_audio = self._render_chain(audio, sr, best_params, config, trim_gain_db, makeup_gain_db)
-        output_analysis = self.analyzer.analyze(mastered_audio, sr)
+        output_analysis = self.analyzer.analyze(mastered_audio, sr, role="output")
         recipe = self._build_recipe(config, best_params, targets, trim_gain_db, makeup_gain_db)
-        report = build_report(config, recipe["schema_version"], targets, input_analysis, output_analysis)
+        report = build_report(
+            config,
+            recipe["schema_version"],
+            targets,
+            input_analysis,
+            output_analysis,
+            reference_analysis=reference_analysis,
+        )
 
         return RenderResult(
             audio=mastered_audio,
             recipe=recipe,
             input_analysis=input_analysis,
             output_analysis=output_analysis,
+            reference_analysis=reference_analysis,
+            targets=targets,
             report=report,
         )
 

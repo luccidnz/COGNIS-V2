@@ -65,6 +65,9 @@ def _analysis(**overrides) -> AnalysisResult:
             channels=2,
             samples=240000,
             duration_s=5.0,
+            role="analysis",
+            source_path=None,
+            source_name=None,
         ),
         loudness=LoudnessSummary(
             integrated_lufs=data["integrated_lufs"],
@@ -134,6 +137,46 @@ def _config() -> MasteringConfig:
         brightness=0.1,
         fir_backend="AUTO",
     )
+
+
+def _reference_case():
+    input_analysis = _analysis(
+        integrated_lufs=-18.4,
+        true_peak_dbfs=-3.8,
+        crest_factor_db=11.2,
+        spectral_tilt_db_per_decade=1.1,
+        low_mid_balance_db=0.8,
+        high_mid_balance_db=0.3,
+        sub_energy_ratio=0.14,
+        bass_energy_ratio=0.22,
+        phase_correlation=0.92,
+        low_band_width=0.18,
+    )
+    reference_analysis = _analysis(
+        integrated_lufs=-12.0,
+        true_peak_dbfs=-1.1,
+        crest_factor_db=7.0,
+        spectral_tilt_db_per_decade=0.4,
+        low_mid_balance_db=0.2,
+        high_mid_balance_db=-0.9,
+        sub_energy_ratio=0.12,
+        bass_energy_ratio=0.18,
+        phase_correlation=0.84,
+        low_band_width=0.11,
+    )
+    output_analysis = _analysis(
+        integrated_lufs=-14.3,
+        true_peak_dbfs=-1.12,
+        crest_factor_db=8.7,
+        spectral_tilt_db_per_decade=0.6,
+        low_mid_balance_db=0.4,
+        high_mid_balance_db=-0.2,
+        sub_energy_ratio=0.13,
+        bass_energy_ratio=0.19,
+        phase_correlation=0.88,
+        low_band_width=0.13,
+    )
+    return input_analysis, reference_analysis, output_analysis
 
 
 def _load_fixture(name: str) -> dict:
@@ -248,7 +291,7 @@ def test_pass_report_serialization_matches_golden_fixture():
         codec_headroom_margin_db=0.3,
     )
 
-    report = build_report(config, "recipe_v1", targets, input_analysis, output_analysis)
+    report = build_report(config, "recipe_v2", targets, input_analysis, output_analysis)
     assert json.loads(serialize_report(report)) == _load_fixture("report_pass.json")
 
 
@@ -288,7 +331,7 @@ def test_fail_report_generates_expected_reason_codes():
         codec_headroom_margin_db=-0.4,
     )
 
-    report = build_report(config, "recipe_v1", targets, input_analysis, output_analysis)
+    report = build_report(config, "recipe_v2", targets, input_analysis, output_analysis)
     codes = [finding.code for finding in report.findings]
 
     assert report.overall_status == "fail"
@@ -321,7 +364,7 @@ def test_fail_report_summary_and_markdown_do_not_claim_safety():
         codec_headroom_margin_db=-0.4,
     )
 
-    report = build_report(config, "recipe_v1", targets, input_analysis, output_analysis)
+    report = build_report(config, "recipe_v2", targets, input_analysis, output_analysis)
     summary_text = " ".join(bullet.message for bullet in report.summary)
     markdown = render_report_markdown(report)
 
@@ -343,7 +386,7 @@ def test_dynamics_risk_summary_does_not_claim_punch_preservation():
         crest_factor_db=6.0,
     )
 
-    report = build_report(config, "recipe_v1", targets, input_analysis, output_analysis)
+    report = build_report(config, "recipe_v2", targets, input_analysis, output_analysis)
     summary_text = " ".join(bullet.message for bullet in report.summary)
 
     assert any(finding.code == "DYNAMICS_COLLAPSE_RISK" for finding in report.findings)
@@ -354,7 +397,7 @@ def test_dynamics_risk_summary_does_not_claim_punch_preservation():
 def test_markdown_report_has_single_title_and_populated_requested_section():
     config = _config()
     targets = build_targets(config)
-    report = build_report(config, "recipe_v1", targets, _analysis(), _analysis(integrated_lufs=-14.2, true_peak_dbfs=-1.3))
+    report = build_report(config, "recipe_v2", targets, _analysis(), _analysis(integrated_lufs=-14.2, true_peak_dbfs=-1.3))
     markdown = render_report_markdown(report)
 
     assert markdown.count("# COGNIS Render Report") == 1
@@ -362,3 +405,37 @@ def test_markdown_report_has_single_title_and_populated_requested_section():
     assert "## Requested" in markdown
     assert "- Mode: `STREAMING_SAFE`" in markdown
     assert "- Ceiling: `-1.00 dBFS` (`TRUE_PEAK`)" in markdown
+
+
+def test_reference_report_serialization_includes_reference_assessment():
+    config = _config()
+    targets = build_targets(config)
+    input_analysis, reference_analysis, output_analysis = _reference_case()
+
+    report = build_report(config, "recipe_v2", targets, input_analysis, output_analysis, reference_analysis)
+    payload = json.loads(serialize_report(report))
+
+    assert report.schema_version == "report_schema_v2"
+    assert report.reference_status in {"constrained", "partial", "matched", "deviated"}
+    assert payload["schema_version"] == "report_schema_v2"
+    assert payload["reference_assessment"]["reference_analysis_schema_version"] == "analysis_schema_v2"
+    assert payload["reference_assessment"]["outcome"] == report.reference_status
+    assert any(item["metric"] == "integrated_lufs" for item in payload["reference_assessment"]["comparisons"])
+    assert all(not finding["code"].startswith("REFERENCE_") for finding in payload["findings"])
+
+
+def test_reference_report_markdown_separates_reference_and_safety_language():
+    config = _config()
+    targets = build_targets(config)
+    input_analysis, reference_analysis, output_analysis = _reference_case()
+
+    report = build_report(config, "recipe_v2", targets, input_analysis, output_analysis, reference_analysis)
+    markdown = render_report_markdown(report)
+
+    assert "## Reference" in markdown
+    assert "## Reference Comparison" in markdown
+    assert "## Reference Summary" in markdown
+    assert "## Reference Findings" in markdown
+    assert "limited by a" in markdown or "consistent with the dynamics-preservation target" in markdown
+    assert "## QC Findings" in markdown
+    assert "REFERENCE_" in markdown
