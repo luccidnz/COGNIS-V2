@@ -1,115 +1,148 @@
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass
+from typing import Any
+
 import numpy as np
-from typing import Tuple, Dict, Any
-from cognis.config import MasteringConfig
+
 from cognis.analysis.analyzer import Analyzer
-from cognis.optimizer.targets import build_targets
-from cognis.optimizer.search import grid_search
-from cognis.dsp.eq import EQ
+from cognis.analysis.features import AnalysisResult
+from cognis.config import MasteringConfig
 from cognis.dsp.dynamics import MultibandDynamics
-from cognis.dsp.stereo import StereoControl
+from cognis.dsp.eq import EQ
 from cognis.dsp.limiter import Limiter
-from cognis.reports.qc import generate_qc_report, QCReport
+from cognis.dsp.stereo import StereoControl
+from cognis.optimizer.search import grid_search
+from cognis.optimizer.targets import TargetValues, build_targets
+from cognis.reports.qc import ReportResult, build_report
+
+
+RECIPE_SCHEMA_VERSION = "recipe_v1"
+
+
+@dataclass(frozen=True)
+class RenderResult:
+    audio: np.ndarray
+    recipe: dict[str, Any]
+    input_analysis: AnalysisResult
+    output_analysis: AnalysisResult
+    report: ReportResult
+
+    @property
+    def mastered_audio(self) -> np.ndarray:
+        return self.audio
+
 
 class Engine:
     def __init__(self):
         self.analyzer = Analyzer()
-        
-    def _render_chain(self, audio: np.ndarray, sr: int, params: Dict[str, float], config: MasteringConfig, trim_gain_db: float, makeup_gain_db: float) -> np.ndarray:
+
+    def _render_chain(
+        self,
+        audio: np.ndarray,
+        sr: int,
+        params: dict[str, float],
+        config: MasteringConfig,
+        trim_gain_db: float,
+        makeup_gain_db: float,
+    ) -> np.ndarray:
         """Execute the DSP chain."""
-        # Instantiate DSP modules
         eq = EQ(sr)
         dynamics = MultibandDynamics(sr, backend=config.fir_backend)
         stereo = StereoControl(sr)
         limiter = Limiter(sr)
-        
-        # 1. Input trim (normalization for headroom)
+
         audio = audio * (10 ** (trim_gain_db / 20.0))
-        
-        # 2. Cleanup (skip for MVP)
-        
-        # 3. Corrective EQ
-        # 4. Bass protection / mono sub handling
-        # 5. Broad tonal shaping
         audio = eq.process(audio, params.get("brightness", 0.0))
-        
-        # 6. Dynamics
         audio = dynamics.process(audio, params.get("dynamics_preservation", 1.0))
-        
-        # 7. Stereo field control
         audio = stereo.process(audio, params.get("width", 1.0), params.get("bass_preservation", 1.0))
-        
-        # 8. Loudness staging
         audio = audio * (10 ** (makeup_gain_db / 20.0))
-        
-        # 9. True-peak limiter
         audio = limiter.process(
-            audio, 
-            ceiling_db=config.ceiling_db, 
-            mode=config.ceiling_mode.value, 
-            oversampling=config.oversampling
+            audio,
+            ceiling_db=config.ceiling_db,
+            mode=config.ceiling_mode.value,
+            oversampling=config.oversampling,
         )
-        
         return audio
 
-    def process(self, audio: np.ndarray, sr: int, config: MasteringConfig) -> Tuple[np.ndarray, QCReport, Dict[str, Any]]:
-        """
-        Orchestrate the mastering process.
-        Returns (mastered_audio, qc_report, recipe)
-        """
-        # 1. Analyze input
-        input_analysis = self.analyzer.analyze(audio, sr)
-        
-        # Calculate required gains
-        # We want to trim the input to -6dBFS true peak to give headroom for EQ/Dynamics
-        input_tp = input_analysis.loudness.true_peak
-        input_lufs = input_analysis.loudness.integrated_loudness
-        
-        # If input is digital silence, avoid math errors
+    def _compute_gain_staging(self, input_analysis: AnalysisResult, config: MasteringConfig) -> tuple[float, float]:
+        input_tp = input_analysis.loudness.true_peak_dbfs
+        input_lufs = input_analysis.loudness.integrated_lufs
+
         if input_lufs < -69.0:
-            trim_gain_db = 0.0
-            makeup_gain_db = 0.0
-        else:
-            trim_gain_db = -6.0 - input_tp
-            trimmed_lufs = input_lufs + trim_gain_db
-            
-            # Assumption: EQ and Dynamics will not drastically alter the overall LUFS.
-            # We compute a static makeup gain here to hit the target loudness before the limiter.
-            raw_makeup_gain = config.target_loudness - trimmed_lufs
-            
-            # Clamp makeup gain to avoid excessive pre-limiter gain jumps.
-            # Extreme gain can cause the limiter to distort heavily or create artifacts.
-            # If the track is extremely quiet, we only boost up to +24dB max.
-            # If the track is extremely loud, we only attenuate down to -24dB max.
-            MAX_MAKEUP_GAIN = 24.0
-            makeup_gain_db = float(np.clip(raw_makeup_gain, -MAX_MAKEUP_GAIN, MAX_MAKEUP_GAIN))
-            
-        # 2. Build targets
-        targets = build_targets(config)
-        
-        # 3. Optimize parameters
-        # Define a render function for the optimizer
-        def render_fn(aud, params):
-            return self._render_chain(aud, sr, params, config, trim_gain_db, makeup_gain_db)
-            
-        best_params = grid_search(audio, sr, targets, render_fn, self.analyzer)
-        
-        # 4. Render final
-        mastered_audio = self._render_chain(audio, sr, best_params, config, trim_gain_db, makeup_gain_db)
-        
-        # 5. QC re-measure
-        output_analysis = self.analyzer.analyze(mastered_audio, sr)
-        qc_report = generate_qc_report(output_analysis)
-        
-        # 6. Recipe
-        from dataclasses import asdict
+            return 0.0, 0.0
+
+        trim_gain_db = -6.0 - input_tp
+        trimmed_lufs = input_lufs + trim_gain_db
+        raw_makeup_gain = config.target_loudness - trimmed_lufs
+        makeup_gain_db = float(np.clip(raw_makeup_gain, -24.0, 24.0))
+        return trim_gain_db, makeup_gain_db
+
+    def _build_recipe(
+        self,
+        config: MasteringConfig,
+        best_params: dict[str, float],
+        targets: TargetValues,
+        trim_gain_db: float,
+        makeup_gain_db: float,
+    ) -> dict[str, Any]:
         config_dict = asdict(config)
-        config_dict['mode'] = config_dict['mode'].value
-        config_dict['ceiling_mode'] = config_dict['ceiling_mode'].value
-        
-        recipe = {
+        config_dict["mode"] = config.mode.value
+        config_dict["ceiling_mode"] = config.ceiling_mode.value
+
+        return {
+            "schema_version": RECIPE_SCHEMA_VERSION,
             "config": config_dict,
-            "params": best_params,
-            "schema_version": "recipe_v1"
+            "params": dict(sorted(best_params.items())),
+            "derived_targets": {
+                "target_loudness": targets.target_loudness,
+                "ceiling_db": targets.ceiling_db,
+                "target_tilt": targets.target_tilt,
+                "target_width": targets.target_width,
+                "target_crest_factor": targets.target_crest_factor,
+                "target_low_band_width": targets.target_low_band_width,
+            },
+            "render_context": {
+                "trim_gain_db": trim_gain_db,
+                "makeup_gain_db": makeup_gain_db,
+                "targets": {
+                    "target_loudness": targets.target_loudness,
+                    "ceiling_db": targets.ceiling_db,
+                    "target_tilt": targets.target_tilt,
+                    "target_width": targets.target_width,
+                    "target_crest_factor": targets.target_crest_factor,
+                    "target_low_band_width": targets.target_low_band_width,
+                },
+            },
         }
-        
-        return mastered_audio, qc_report, recipe
+
+    def render(self, audio: np.ndarray, sr: int, config: MasteringConfig) -> RenderResult:
+        """Run the canonical mastering flow and return all deterministic artifacts."""
+        input_analysis = self.analyzer.analyze(audio, sr)
+        trim_gain_db, makeup_gain_db = self._compute_gain_staging(input_analysis, config)
+        targets = build_targets(config)
+
+        def render_fn(aud: np.ndarray, params: dict[str, float]) -> np.ndarray:
+            return self._render_chain(aud, sr, params, config, trim_gain_db, makeup_gain_db)
+
+        best_params = grid_search(audio, sr, targets, render_fn, self.analyzer)
+        mastered_audio = self._render_chain(audio, sr, best_params, config, trim_gain_db, makeup_gain_db)
+        output_analysis = self.analyzer.analyze(mastered_audio, sr)
+        recipe = self._build_recipe(config, best_params, targets, trim_gain_db, makeup_gain_db)
+        report = build_report(config, recipe["schema_version"], targets, input_analysis, output_analysis)
+
+        return RenderResult(
+            audio=mastered_audio,
+            recipe=recipe,
+            input_analysis=input_analysis,
+            output_analysis=output_analysis,
+            report=report,
+        )
+
+    def process(self, audio: np.ndarray, sr: int, config: MasteringConfig) -> tuple[np.ndarray, ReportResult, dict[str, Any]]:
+        """Compatibility shim around :meth:`render` for existing callers."""
+        result = self.render(audio, sr, config)
+        return result.audio, result.report, result.recipe
+
+
+RenderArtifacts = RenderResult

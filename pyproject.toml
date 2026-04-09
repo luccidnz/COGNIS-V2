@@ -28,7 +28,7 @@ where = ["."]
 include = ["cognis*"]
 
 [tool.pytest.ini_options]
-addopts = ["-p", "no:cacheprovider"]
+addopts = ["-p", "no:cacheprovider", "--basetemp=.tmp/pytest"]
 pythonpath = ["."]
 testpaths = ["tests"]
 norecursedirs = [".pytest_cache", "pytest-cache-files-*"]

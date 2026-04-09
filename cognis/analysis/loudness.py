@@ -1,108 +1,126 @@
+from __future__ import annotations
+
 import numpy as np
-from scipy.signal import lfilter, butter, resample_poly
+from scipy.signal import butter, lfilter, resample_poly
+
 
 def k_weighting_filter(audio: np.ndarray, sr: int) -> np.ndarray:
     """Approximate K-weighting filter for BS.1770."""
-    # Pre-filter 1: High shelf
-    # Pre-filter 2: High pass
-    # For MVP, we use a simple high-pass and high-shelf approximation
-    # Real BS.1770 uses specific biquad coefficients for 48kHz
-    
-    # Simple approximation for 48kHz
     if sr == 48000:
         b1 = [1.53512485958697, -2.69169618940638, 1.19839281085285]
         a1 = [1.0, -1.69065929318241, 0.73248077421585]
         b2 = [1.0, -2.0, 1.0]
         a2 = [1.0, -1.99004745483398, 0.99007225036621]
-        
+
         filtered = lfilter(b1, a1, audio, axis=-1)
         filtered = lfilter(b2, a2, filtered, axis=-1)
         return filtered
-    else:
-        # Fallback generic HPF for other sample rates
-        b, a = butter(2, 100 / (sr / 2), btype='highpass')
-        return lfilter(b, a, audio, axis=-1)
 
-def compute_loudness(audio: np.ndarray, sr: int):
-    """Compute integrated, short-term, momentary loudness, and peaks."""
-    # K-weighting
+    b, a = butter(2, 100 / (sr / 2), btype="highpass")
+    return lfilter(b, a, audio, axis=-1)
+
+
+def _to_lufs(energy: np.ndarray) -> np.ndarray:
+    return -0.691 + 10 * np.log10(np.maximum(energy, 1e-10))
+
+
+def _compute_loudness_range(short_term_lufs: np.ndarray) -> float:
+    gated = short_term_lufs[short_term_lufs > -70.0]
+    if gated.size < 2:
+        return 0.0
+    return float(np.percentile(gated, 95) - np.percentile(gated, 10))
+
+
+def compute_loudness(audio: np.ndarray, sr: int) -> dict[str, float]:
+    """Compute integrated, short-term, momentary loudness, and peak features."""
     weighted = k_weighting_filter(audio, sr)
-    
-    # Mean square energy per channel
-    # 400ms blocks
+
     block_size = int(0.4 * sr)
     overlap = int(0.3 * sr)
     step = block_size - overlap
-    
+
     if audio.shape[1] < block_size:
-        # Too short, just return simple RMS
         rms = np.sqrt(np.mean(weighted**2))
         lufs = -70.0 if rms < 1e-10 else 20 * np.log10(rms)
-        return lufs, lufs, lufs, np.max(np.abs(audio)), np.max(np.abs(audio))
-        
+        sample_peak_linear = float(np.max(np.abs(audio)))
+        true_peak_linear = sample_peak_linear
+        sample_peak_dbfs = 20 * np.log10(sample_peak_linear + 1e-10)
+        true_peak_dbfs = 20 * np.log10(true_peak_linear + 1e-10)
+        return {
+            "integrated_lufs": float(lufs),
+            "short_term_max_lufs": float(lufs),
+            "short_term_mean_lufs": float(lufs),
+            "short_term_min_lufs": float(lufs),
+            "short_term_range_lu": 0.0,
+            "momentary_max_lufs": float(lufs),
+            "momentary_mean_lufs": float(lufs),
+            "momentary_min_lufs": float(lufs),
+            "loudness_range_lu": 0.0,
+            "sample_peak_dbfs": float(sample_peak_dbfs),
+            "true_peak_dbfs": float(true_peak_dbfs),
+        }
+
     num_blocks = (weighted.shape[1] - block_size) // step + 1
     energies = np.zeros((weighted.shape[0], num_blocks))
-    
-    for i in range(num_blocks):
-        start = i * step
+
+    for index in range(num_blocks):
+        start = index * step
         end = start + block_size
-        energies[:, i] = np.mean(weighted[:, start:end]**2, axis=1)
-        
-    # Sum channels (with 1.5dB boost for surround channels, but we assume stereo)
+        energies[:, index] = np.mean(weighted[:, start:end] ** 2, axis=1)
+
     block_energies = np.sum(energies, axis=0)
-    
-    # Absolute gate at -70 LUFS
-    abs_gate_energy = 10**(-70.0 / 10.0)
+    abs_gate_energy = 10 ** (-70.0 / 10.0)
     gated_blocks = block_energies[block_energies > abs_gate_energy]
-    
-    if len(gated_blocks) == 0:
+
+    if gated_blocks.size == 0:
         integrated = -70.0
     else:
-        # Relative gate at -10 LU from absolute gated loudness
-        rel_threshold = np.mean(gated_blocks) * (10**(-10.0 / 10.0))
+        rel_threshold = np.mean(gated_blocks) * (10 ** (-10.0 / 10.0))
         rel_gated_blocks = gated_blocks[gated_blocks > rel_threshold]
-        
-        if len(rel_gated_blocks) == 0:
+        if rel_gated_blocks.size == 0:
             integrated = -70.0
         else:
-            integrated = -0.691 + 10 * np.log10(np.mean(rel_gated_blocks))
-            
-    # Short-term (3s blocks)
+            integrated = float(_to_lufs(np.array([np.mean(rel_gated_blocks)]))[0])
+
+    momentary_lufs = _to_lufs(block_energies)
+
     st_block_size = int(3.0 * sr)
     if audio.shape[1] >= st_block_size:
         st_step = int(1.0 * sr)
         st_num_blocks = (weighted.shape[1] - st_block_size) // st_step + 1
         st_energies = np.zeros(st_num_blocks)
-        for i in range(st_num_blocks):
-            start = i * st_step
+        for index in range(st_num_blocks):
+            start = index * st_step
             end = start + st_block_size
-            st_energies[i] = np.sum(np.mean(weighted[:, start:end]**2, axis=1))
-        short_term = -0.691 + 10 * np.log10(np.max(st_energies) + 1e-10)
+            st_energies[index] = np.sum(np.mean(weighted[:, start:end] ** 2, axis=1))
+        short_term_lufs = _to_lufs(st_energies)
     else:
-        short_term = integrated
-        
-    momentary = -0.691 + 10 * np.log10(np.max(block_energies) + 1e-10)
-    
-    sample_peak_linear = np.max(np.abs(audio))
-    
-    # True peak (4x oversampling approximation)
+        short_term_lufs = np.array([integrated], dtype=float)
+
+    sample_peak_linear = float(np.max(np.abs(audio)))
+
     if audio.shape[1] > 100:
-        # Just oversample a small chunk around the peak for speed in MVP
-        # We should find the peak across all channels, not just channel 0
-        peak_idx = np.argmax(np.max(np.abs(audio), axis=0))
+        peak_idx = int(np.argmax(np.max(np.abs(audio), axis=0)))
         start = max(0, peak_idx - 50)
         end = min(audio.shape[1], peak_idx + 50)
         chunk = audio[:, start:end]
         os_chunk = resample_poly(chunk, 4, 1, axis=-1)
-        true_peak_linear = np.max(np.abs(os_chunk))
+        true_peak_linear = float(np.max(np.abs(os_chunk)))
     else:
         true_peak_linear = sample_peak_linear
-        
-    # Ensure true peak is at least sample peak
+
     true_peak_linear = max(true_peak_linear, sample_peak_linear)
-    
-    # Convert to dBFS
-    sample_peak_dbfs = 20 * np.log10(sample_peak_linear + 1e-10)
-    true_peak_dbfs = 20 * np.log10(true_peak_linear + 1e-10)
-    
-    return integrated, short_term, momentary, true_peak_dbfs, sample_peak_dbfs
+
+    return {
+        "integrated_lufs": float(integrated),
+        "short_term_max_lufs": float(np.max(short_term_lufs)),
+        "short_term_mean_lufs": float(np.mean(short_term_lufs)),
+        "short_term_min_lufs": float(np.min(short_term_lufs)),
+        "short_term_range_lu": float(np.max(short_term_lufs) - np.min(short_term_lufs)),
+        "momentary_max_lufs": float(np.max(momentary_lufs)),
+        "momentary_mean_lufs": float(np.mean(momentary_lufs)),
+        "momentary_min_lufs": float(np.min(momentary_lufs)),
+        "loudness_range_lu": _compute_loudness_range(short_term_lufs),
+        "sample_peak_dbfs": float(20 * np.log10(sample_peak_linear + 1e-10)),
+        "true_peak_dbfs": float(20 * np.log10(true_peak_linear + 1e-10)),
+    }

@@ -32,9 +32,12 @@ Stubs for future ML models.
 
 ## `cognis.reports`
 Quality control and reporting.
+- `qc.py`: versioned target-vs-result reporting, QC findings, and markdown summaries.
 
 ## `cognis.serialization`
 Saving and loading recipes and configurations.
+- `recipe.py`: stable JSON serialization helpers for configs and recipes.
+- `artifacts.py`: writes recipe, analysis, and report artifacts to disk.
 
 ## `cognis.io`
 Audio loading and saving.

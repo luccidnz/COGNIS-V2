@@ -80,6 +80,43 @@ Process an audio file using the CLI:
 python -m cognis.cli input.wav output.wav --mode STREAMING_SAFE --target_loudness -14.0 --ceiling_db -1.0
 ```
 
+To also emit a human-readable markdown report:
+```bash
+python -m cognis.cli input.wav output.wav --mode STREAMING_SAFE --target_loudness -14.0 --ceiling_db -1.0 --write-markdown-report
+```
+
+To write artifacts into a dedicated directory:
+```bash
+python -m cognis.cli input.wav output.wav --artifacts-dir build-artifacts
+```
+
+To render audio only:
+```bash
+python -m cognis.cli input.wav output.wav --no-artifacts
+```
+
+The canonical CLI render path now writes deterministic artifacts alongside the mastered audio:
+- `output.recipe.json`
+- `output.analysis.input.json`
+- `output.analysis.output.json`
+- `output.report.json`
+- `output.report.md` when markdown output is requested
+
+## Analyzer / QC / Report Artifacts
+
+The render pipeline now exposes three versioned artifacts:
+- `analysis_schema_v1`: structured post-render analysis including loudness, tonal balance, stereo, and delivery-risk proxies.
+- `report_schema_v1`: requested-vs-achieved deltas, QC findings, and concise "what changed" bullets.
+- `recipe_v1`: chosen DSP parameters plus the derived target values and gain staging context used for the render.
+
+QC findings are intentionally severity-based rather than boolean-only:
+- `pass`: no blocking issue detected under the current checks
+- `informational`: context only
+- `warning`: review recommended before release
+- `fail`: not release-ready under the measured constraints
+
+See [docs/analyzer_qc_reporting.md](docs/analyzer_qc_reporting.md) for schema and usage details.
+
 ## Known Limitations
 - The BS.1770 loudness measurement is an approximation and not yet fully certification-grade.
 - The limiter is an envelope-aware quasi-lookahead limiter. While better than a static waveshaper, it is not yet a multi-stage true lookahead limiter.
@@ -135,6 +172,6 @@ export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
 
 ## Roadmap
 - Refine the Limiter and Dynamics modules (e.g., implement a true lookahead envelope-based limiter with smarter release handling).
-- Profile other Python DSP orchestration hot-spots (e.g. envelope follower/gain smoothing inside the Dynamics stage).
 - Refine BS.1770 loudness measurement to full compliance.
+- Expand the report layer with reference-track deltas and richer delivery-profile presets built on the current analyzer/QC artifacts.
 - Develop ML models for style encoding and preference ranking.

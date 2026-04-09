@@ -15,7 +15,7 @@ def compute_objective(analysis: AnalysisResult, targets: TargetValues) -> float:
     
     # 1. True Peak Constraint
     # Must not exceed ceiling
-    tp_violation = max(0.0, analysis.loudness.true_peak - targets.ceiling_db)
+    tp_violation = max(0.0, analysis.loudness.true_peak_dbfs - targets.ceiling_db)
     score += tp_violation * 10000.0
     
     # 2. Phase Correlation Constraint
@@ -36,28 +36,28 @@ def compute_objective(analysis: AnalysisResult, targets: TargetValues) -> float:
     
     # 1. Loudness Penalty
     # Distance from target integrated loudness
-    loudness_diff = abs(analysis.loudness.integrated_loudness - targets.target_loudness)
+    loudness_diff = abs(analysis.loudness.integrated_lufs - targets.target_loudness)
     score += loudness_diff * 20.0
     
     # 2. Spectral Tilt Penalty
     # Deviation from target overall tonal balance
-    tilt_diff = abs(analysis.spectrum.spectral_tilt - targets.target_tilt)
+    tilt_diff = abs(analysis.tonal.spectral_tilt_db_per_decade - targets.target_tilt)
     score += tilt_diff * 10.0
     
     # 3. Low/Mid Tonal Penalty
     # Penalize excessive bass buildup or loss (assuming target ~0 dB difference for MVP)
-    low_mid_diff = abs(analysis.spectrum.low_mid_balance)
+    low_mid_diff = abs(analysis.tonal.low_mid_balance_db)
     score += low_mid_diff * 5.0
     
     # 4. High/Mid Tonal Penalty
     # Penalize excessive harshness or dullness
-    high_mid_diff = abs(analysis.spectrum.high_mid_balance)
+    high_mid_diff = abs(analysis.tonal.high_mid_balance_db)
     score += high_mid_diff * 5.0
     
     # 5. Crest-Factor / Dynamics Penalty
     # Penalize over-compression (crest factor getting too small)
-    if analysis.loudness.crest_factor < targets.target_crest_factor:
-        crest_diff = targets.target_crest_factor - analysis.loudness.crest_factor
+    if analysis.loudness.crest_factor_db < targets.target_crest_factor:
+        crest_diff = targets.target_crest_factor - analysis.loudness.crest_factor_db
         score += crest_diff * 15.0
     
     # 6. Width Penalty
