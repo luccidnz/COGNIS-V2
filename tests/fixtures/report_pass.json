@@ -148,7 +148,7 @@
     "stereo_width": 1.0,
     "target_loudness_lufs": -14.0
   },
-  "schema_version": "report_schema_v2",
+  "schema_version": "report_schema_v3",
   "summary": [
     {
       "category": "loudness",

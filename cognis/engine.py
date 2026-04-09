@@ -12,7 +12,7 @@ from cognis.dsp.dynamics import MultibandDynamics
 from cognis.dsp.eq import EQ
 from cognis.dsp.limiter import Limiter
 from cognis.dsp.stereo import StereoControl
-from cognis.optimizer.search import grid_search
+from cognis.optimizer.search import SearchTrace, grid_search_with_trace
 from cognis.optimizer.targets import TargetValues, build_targets
 from cognis.reports.qc import ReportResult, build_report
 
@@ -28,6 +28,7 @@ class RenderResult:
     output_analysis: AnalysisResult
     reference_analysis: AnalysisResult | None
     targets: TargetValues
+    optimizer_trace: SearchTrace | None
     report: ReportResult
 
     @property
@@ -157,7 +158,8 @@ class Engine:
         def render_fn(aud: np.ndarray, params: dict[str, float]) -> np.ndarray:
             return self._render_chain(aud, sr, params, config, trim_gain_db, makeup_gain_db)
 
-        best_params = grid_search(audio, sr, targets, render_fn, self.analyzer)
+        optimizer_trace = grid_search_with_trace(audio, sr, targets, render_fn, self.analyzer)
+        best_params = optimizer_trace.best_params
         mastered_audio = self._render_chain(audio, sr, best_params, config, trim_gain_db, makeup_gain_db)
         output_analysis = self.analyzer.analyze(mastered_audio, sr, role="output")
         recipe = self._build_recipe(config, best_params, targets, trim_gain_db, makeup_gain_db)
@@ -168,6 +170,7 @@ class Engine:
             input_analysis,
             output_analysis,
             reference_analysis=reference_analysis,
+            optimizer_trace=optimizer_trace,
         )
 
         return RenderResult(
@@ -177,6 +180,7 @@ class Engine:
             output_analysis=output_analysis,
             reference_analysis=reference_analysis,
             targets=targets,
+            optimizer_trace=optimizer_trace,
             report=report,
         )
 

@@ -9,7 +9,7 @@ from cognis.optimizer.targets import TargetValues
 from cognis.reports.reference import ReferenceAssessment, build_reference_assessment, render_reference_markdown_section
 
 
-REPORT_SCHEMA_VERSION = "report_schema_v2"
+REPORT_SCHEMA_VERSION = "report_schema_v3"
 
 SEVERITY_PASS = "pass"
 SEVERITY_INFO = "informational"
@@ -534,6 +534,7 @@ def build_report(
     input_analysis: AnalysisResult,
     output_analysis: AnalysisResult,
     reference_analysis: AnalysisResult | None = None,
+    optimizer_trace: Any | None = None,
 ) -> ReportResult:
     requested = _build_requested(config)
     achieved = _build_achieved(output_analysis)
@@ -542,7 +543,14 @@ def build_report(
     overall_status = _overall_status(findings)
     reference_assessment = None
     if reference_analysis is not None:
-        reference_assessment = build_reference_assessment(config, targets, input_analysis, reference_analysis, output_analysis)
+        reference_assessment = build_reference_assessment(
+            config,
+            targets,
+            input_analysis,
+            reference_analysis,
+            output_analysis,
+            optimizer_trace=optimizer_trace,
+        )
     summary = _build_summary(input_analysis, output_analysis, delta, overall_status, findings, reference_assessment)
 
     return ReportResult(
@@ -609,8 +617,17 @@ def generate_qc_report(
     targets: TargetValues,
     recipe_schema_version: str = "recipe_v2",
     reference_analysis: AnalysisResult | None = None,
+    optimizer_trace: Any | None = None,
 ) -> QCReport:
-    return build_report(config, recipe_schema_version, targets, input_analysis, output_analysis, reference_analysis)
+    return build_report(
+        config,
+        recipe_schema_version,
+        targets,
+        input_analysis,
+        output_analysis,
+        reference_analysis,
+        optimizer_trace=optimizer_trace,
+    )
 
 
 def format_report_markdown(report: QCReport) -> str:

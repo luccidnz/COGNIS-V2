@@ -41,7 +41,7 @@ def test_engine_render_emits_first_class_artifacts():
     assert result.output_analysis.schema_version == "analysis_schema_v2"
     assert result.reference_analysis is None
     assert result.targets.reference_targeting is None
-    assert result.report.schema_version == "report_schema_v2"
+    assert result.report.schema_version == "report_schema_v3"
     assert result.report.findings
 
 
@@ -50,7 +50,7 @@ def test_engine_process_remains_compatible():
     mastered, report, recipe = engine.process(_make_audio(), 48000, _make_config())
 
     assert mastered.shape == _make_audio().shape
-    assert report.schema_version == "report_schema_v2"
+    assert report.schema_version == "report_schema_v3"
     assert recipe["schema_version"] == "recipe_v2"
 
 
@@ -121,6 +121,9 @@ def test_engine_render_with_reference_emits_reference_artifacts():
     assert result.report.reference_status in {"constrained", "partial", "matched", "deviated"}
     assert result.report.reference_assessment is not None
     assert result.report.reference_assessment.reference_analysis_schema_version == "analysis_schema_v2"
+    assert result.report.reference_assessment.attribution is not None
+    assert result.report.reference_assessment.attribution.available is True
+    assert any(entry.attribution_level in {"exact", "inferred", "unavailable"} for entry in result.report.reference_assessment.attribution.entries)
 
     artifact_root = Path(".tmp") / "test-reference-artifact-writer"
     if artifact_root.exists():

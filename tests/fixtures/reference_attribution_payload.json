@@ -1,0 +1,135 @@
+{
+  "availability_reason": null,
+  "available": true,
+  "entries": [
+    {
+      "attribution_level": "exact",
+      "category": "loudness_ceiling_constraint",
+      "decision": "capped_by_loudness_baseline",
+      "evidence": [
+        {
+          "comparator": null,
+          "metric": "reference_loudness",
+          "threshold": null,
+          "unit": "LUFS",
+          "value": -12.0
+        },
+        {
+          "comparator": null,
+          "metric": "reference_target",
+          "threshold": null,
+          "unit": "LUFS",
+          "value": -14.0
+        },
+        {
+          "comparator": null,
+          "metric": "loudness_baseline",
+          "threshold": null,
+          "unit": "LUFS",
+          "value": -14.0
+        }
+      ],
+      "explanation": "Integrated loudness remained conservative because the reference-aware target was capped at -14.00 LUFS instead of chasing the -12.00 LUFS reference.",
+      "metric": "integrated_lufs",
+      "required_change": "Raise `target_loudness` or loosen the loudness baseline policy.",
+      "tradeoff": "Configured loudness target over a closer reference match."
+    },
+    {
+      "attribution_level": "exact",
+      "category": "mono_low_band_width_safety",
+      "decision": "held_by_mono_safety",
+      "evidence": [
+        {
+          "comparator": null,
+          "metric": "reference_low_band_width",
+          "threshold": null,
+          "unit": "ratio",
+          "value": 0.125
+        },
+        {
+          "comparator": null,
+          "metric": "reference_target_low_band_width",
+          "threshold": null,
+          "unit": "ratio",
+          "value": 0.09999999999999998
+        },
+        {
+          "comparator": null,
+          "metric": "low_band_width_baseline",
+          "threshold": null,
+          "unit": "ratio",
+          "value": 0.09999999999999998
+        }
+      ],
+      "explanation": "Low-band width remained 0.09 ratio narrower than the reference because the mono-safety target was capped at 0.10.",
+      "metric": "low_band_width",
+      "required_change": "Relax bass preservation or allow a wider low-band cap.",
+      "tradeoff": "Mono safety over a wider low-band match."
+    },
+    {
+      "attribution_level": "exact",
+      "category": "dynamics_preservation_constraint",
+      "decision": "held_by_dynamics_floor",
+      "evidence": [
+        {
+          "comparator": null,
+          "metric": "reference_crest_factor",
+          "threshold": null,
+          "unit": "dB",
+          "value": 7.0
+        },
+        {
+          "comparator": null,
+          "metric": "reference_target_crest_factor",
+          "threshold": null,
+          "unit": "dB",
+          "value": 10.0
+        },
+        {
+          "comparator": null,
+          "metric": "crest_factor_baseline",
+          "threshold": null,
+          "unit": "dB",
+          "value": 7.5
+        }
+      ],
+      "explanation": "Crest factor remained 1.50 dB above the reference because the preservation target stayed at 10.00 dB.",
+      "metric": "crest_factor_db",
+      "required_change": "Reduce `dynamics_preservation` or accept a lower crest-factor floor.",
+      "tradeoff": "Dynamics preservation over a denser reference match."
+    },
+    {
+      "attribution_level": "exact",
+      "category": "tonal_correction_limit",
+      "decision": "capped_by_brightness_budget",
+      "evidence": [
+        {
+          "comparator": null,
+          "metric": "reference_spectral_tilt",
+          "threshold": null,
+          "unit": "dB/decade",
+          "value": 1.25
+        },
+        {
+          "comparator": null,
+          "metric": "reference_target_spectral_tilt",
+          "threshold": null,
+          "unit": "dB/decade",
+          "value": 0.30000000000000004
+        },
+        {
+          "comparator": null,
+          "metric": "spectral_tilt_baseline",
+          "threshold": null,
+          "unit": "dB/decade",
+          "value": 0.30000000000000004
+        }
+      ],
+      "explanation": "Tonal correction stayed conservative because the spectral-tilt target was capped at 0.30 dB/decade instead of the 1.25 dB/decade reference.",
+      "metric": "spectral_tilt_db_per_decade",
+      "required_change": "Increase `brightness` or relax the tonal correction cap.",
+      "tradeoff": "Conservative tonal correction over a closer reference tilt match."
+    }
+  ],
+  "schema_version": "reference_attribution_schema_v1"
+}

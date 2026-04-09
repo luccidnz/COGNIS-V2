@@ -112,9 +112,9 @@ The canonical CLI render path now writes deterministic artifacts alongside the m
 
 The render pipeline now exposes four versioned artifacts:
 - `analysis_schema_v2`: structured post-render analysis including loudness, tonal balance, stereo, and delivery-risk proxies, plus deterministic role/source metadata.
-- `report_schema_v2`: requested-vs-achieved deltas, QC findings, reference assessment, and concise "what changed" bullets.
+- `report_schema_v3`: requested-vs-achieved deltas, QC findings, reference assessment, and concise "what changed" bullets.
 - `recipe_v2`: chosen DSP parameters plus the derived target values, reference-aware targeting, and gain staging context used for the render.
-- `reference_assessment_schema_v1`: nested input-vs-reference and output-vs-reference comparisons with reference-aware QC language.
+- `reference_assessment_schema_v2`: nested input-vs-reference and output-vs-reference comparisons with constraint-aware attribution.
 
 QC findings are intentionally severity-based rather than boolean-only:
 - `pass`: no blocking issue detected under the current checks

@@ -179,6 +179,80 @@ def _reference_case():
     return input_analysis, reference_analysis, output_analysis
 
 
+def _attribution_case_exact():
+    input_analysis = _analysis(
+        integrated_lufs=-18.0,
+        true_peak_dbfs=-3.0,
+        crest_factor_db=10.0,
+        spectral_tilt_db_per_decade=0.0,
+        low_mid_balance_db=0.1,
+        high_mid_balance_db=0.0,
+        low_band_width=0.10,
+        mid_band_width=0.30,
+        phase_correlation=0.82,
+    )
+    reference_analysis = _analysis(
+        integrated_lufs=-12.0,
+        true_peak_dbfs=-1.2,
+        crest_factor_db=7.0,
+        spectral_tilt_db_per_decade=1.25,
+        low_mid_balance_db=-0.2,
+        high_mid_balance_db=-0.8,
+        low_band_width=0.125,
+        mid_band_width=0.28,
+        phase_correlation=0.74,
+    )
+    output_analysis = _analysis(
+        integrated_lufs=-13.5,
+        true_peak_dbfs=-1.25,
+        crest_factor_db=8.5,
+        spectral_tilt_db_per_decade=0.25,
+        low_mid_balance_db=0.0,
+        high_mid_balance_db=-0.3,
+        low_band_width=0.03125,
+        mid_band_width=0.29,
+        phase_correlation=0.79,
+    )
+    return input_analysis, reference_analysis, output_analysis
+
+
+def _attribution_case_heuristic():
+    input_analysis = _analysis(
+        integrated_lufs=-18.0,
+        true_peak_dbfs=-3.0,
+        crest_factor_db=9.5,
+        spectral_tilt_db_per_decade=-0.2,
+        low_mid_balance_db=0.0,
+        high_mid_balance_db=0.2,
+        low_band_width=0.11,
+        mid_band_width=0.30,
+        phase_correlation=0.81,
+    )
+    reference_analysis = _analysis(
+        integrated_lufs=-12.5,
+        true_peak_dbfs=-1.4,
+        crest_factor_db=7.2,
+        spectral_tilt_db_per_decade=0.10,
+        low_mid_balance_db=-0.1,
+        high_mid_balance_db=0.6,
+        low_band_width=0.10,
+        mid_band_width=0.27,
+        phase_correlation=0.75,
+    )
+    output_analysis = _analysis(
+        integrated_lufs=-13.4,
+        true_peak_dbfs=-1.25,
+        crest_factor_db=8.0,
+        spectral_tilt_db_per_decade=0.95,
+        low_mid_balance_db=-0.1,
+        high_mid_balance_db=0.3,
+        low_band_width=0.09,
+        mid_band_width=0.28,
+        phase_correlation=0.77,
+    )
+    return input_analysis, reference_analysis, output_analysis
+
+
 def _load_fixture(name: str) -> dict:
     return json.loads((FIXTURES / name).read_text(encoding="utf-8"))
 
@@ -415,9 +489,10 @@ def test_reference_report_serialization_includes_reference_assessment():
     report = build_report(config, "recipe_v2", targets, input_analysis, output_analysis, reference_analysis)
     payload = json.loads(serialize_report(report))
 
-    assert report.schema_version == "report_schema_v2"
+    assert report.schema_version == "report_schema_v3"
     assert report.reference_status in {"constrained", "partial", "matched", "deviated"}
-    assert payload["schema_version"] == "report_schema_v2"
+    assert payload["schema_version"] == "report_schema_v3"
+    assert payload["reference_assessment"]["schema_version"] == "reference_assessment_schema_v2"
     assert payload["reference_assessment"]["reference_analysis_schema_version"] == "analysis_schema_v2"
     assert payload["reference_assessment"]["outcome"] == report.reference_status
     assert any(item["metric"] == "integrated_lufs" for item in payload["reference_assessment"]["comparisons"])
@@ -435,7 +510,76 @@ def test_reference_report_markdown_separates_reference_and_safety_language():
     assert "## Reference" in markdown
     assert "## Reference Comparison" in markdown
     assert "## Reference Summary" in markdown
+    assert "## Reference Attribution" in markdown
     assert "## Reference Findings" in markdown
     assert "limited by a" in markdown or "consistent with the dynamics-preservation target" in markdown
     assert "## QC Findings" in markdown
     assert "REFERENCE_" in markdown
+
+
+def test_reference_report_includes_constraint_attribution_with_stable_schema():
+    config = _config()
+    input_analysis, reference_analysis, output_analysis = _attribution_case_exact()
+    targets = build_targets(config, input_analysis, reference_analysis)
+
+    report = build_report(config, "recipe_v2", targets, input_analysis, output_analysis, reference_analysis)
+    payload = json.loads(serialize_report(report))
+
+    attribution = payload["reference_assessment"]["attribution"]
+    assert attribution["schema_version"] == "reference_attribution_schema_v1"
+    assert attribution["available"] is True
+    levels = [entry["attribution_level"] for entry in attribution["entries"]]
+    assert levels[:2] == ["exact", "exact"]
+    assert set(levels[2:]).issubset({"exact", "inferred"})
+    assert {entry["category"] for entry in attribution["entries"]} == {
+        "loudness_ceiling_constraint",
+        "mono_low_band_width_safety",
+        "dynamics_preservation_constraint",
+        "tonal_correction_limit",
+    }
+    assert all(entry["explanation"] for entry in attribution["entries"])
+
+
+def test_reference_report_markdown_reflects_attribution_payload():
+    config = _config()
+    input_analysis, reference_analysis, output_analysis = _attribution_case_exact()
+    targets = build_targets(config, input_analysis, reference_analysis)
+
+    report = build_report(config, "recipe_v2", targets, input_analysis, output_analysis, reference_analysis)
+    payload = json.loads(serialize_report(report))
+    markdown = render_report_markdown(report)
+
+    attribution = payload["reference_assessment"]["attribution"]
+    for entry in attribution["entries"]:
+        assert entry["category"] in markdown
+        assert entry["explanation"] in markdown
+        assert f"`{entry['attribution_level']}`" in markdown
+
+
+def test_reference_report_honestly_states_when_attribution_is_unavailable():
+    config = _config()
+    targets = build_targets(config)
+    input_analysis, reference_analysis, output_analysis = _reference_case()
+
+    report = build_report(config, "recipe_v2", targets, input_analysis, output_analysis, reference_analysis)
+    payload = json.loads(serialize_report(report))
+    markdown = render_report_markdown(report)
+
+    attribution = payload["reference_assessment"]["attribution"]
+    assert attribution["available"] is False
+    assert attribution["entries"] == []
+    assert "Attribution unavailable" in markdown
+    assert "no causal attribution was generated" in markdown
+
+
+def test_reference_report_uses_unavailable_label_when_no_supported_tradeoff_exists():
+    config = _config()
+    input_analysis, reference_analysis, output_analysis = _attribution_case_heuristic()
+    targets = build_targets(config, input_analysis, reference_analysis)
+
+    report = build_report(config, "recipe_v2", targets, input_analysis, output_analysis, reference_analysis)
+    payload = json.loads(serialize_report(report))
+
+    labels = [entry["attribution_level"] for entry in payload["reference_assessment"]["attribution"]["entries"]]
+    assert "exact" in labels
+    assert "unavailable" in labels

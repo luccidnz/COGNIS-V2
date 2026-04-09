@@ -18,9 +18,11 @@ These filenames are deterministic and contain no timestamps.
 ## Schema Versions
 
 - Analysis artifact: `analysis_schema_v2`
-- Render report artifact: `report_schema_v2`
+- Render report artifact: `report_schema_v3`
 - Recipe artifact: `recipe_v2`
-- Reference assessment artifact: `reference_assessment_schema_v1`
+- Reference assessment artifact: `reference_assessment_schema_v2`
+
+The reference assessment also carries a nested attribution payload for constraint-aware explanations, versioned as `reference_attribution_schema_v1`.
 
 Schema versions are explicit from day one so later optimizer, API, and UI work can reference them safely.
 
@@ -37,16 +39,16 @@ Schema versions are explicit from day one so later optimizer, API, and UI work c
 
 The analysis artifact is intended to be stable enough to reuse in report generation and later target-builder work.
 
-## Report Schema v2
+## Report Schema v3
 
-`report_schema_v2` is the derived render judgement layer. It contains:
+`report_schema_v3` is the derived render judgement layer. It contains:
 
 - requested: requested mode, loudness, ceiling, codec-safe request state, and core config intent
 - achieved: the subset of measured output metrics needed for target checks and release review
 - delta: requested-vs-achieved loudness, peak margin, codec-safety margin, tonal/stereo/dynamics deltas
 - findings: machine-readable QC findings with reason codes, severity, explanation, and measured evidence
 - summary: deterministic factual bullets describing what changed
-- reference assessment: nested reference-vs-input/output comparisons plus reference-aware summary bullets when a reference is supplied
+- reference assessment: nested reference-vs-input/output comparisons, reference-aware summary bullets, and constraint-aware attribution when a reference is supplied
 - overall_status: `pass`, `warning`, or `fail`
 
 The report does not duplicate the full input/output analysis payloads. Those live in the analysis artifacts.
@@ -60,6 +62,13 @@ The report does not duplicate the full input/output analysis payloads. Those liv
 
 Current top-level reason codes cover loudness misses, true-peak safety, digital overs, mono/stereo safety, low-end width drift, limiter stress, codec risk, tonal extremes, momentary spikes, and dynamics collapse risk.
 Reference runs add a nested assessment rather than replacing those top-level safety findings.
+
+The reference assessment keeps explanation labels honest:
+
+- `exact` means the report can point to a direct measured blocker or threshold
+- `inferred` means the report can connect the result to target-plan logic, but not to a step-by-step optimizer trace
+- `heuristic` is reserved for future report-only narratives when exact target or trace evidence is unavailable
+- `unavailable` means the report could not attribute the residual gap without inventing causality
 
 ## CLI Usage
 
