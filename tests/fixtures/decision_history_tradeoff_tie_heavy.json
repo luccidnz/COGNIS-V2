@@ -1,0 +1,530 @@
+{
+  "artifact_type": "optimizer_decision_history",
+  "competitive_alternatives": [
+    {
+      "index": 1,
+      "objective_attribution": {
+        "dominant_penalty": 1.0,
+        "dominant_term": "true_peak_ceiling",
+        "reference_basis": "derived",
+        "reference_constraints": [],
+        "reference_targeting_schema_version": "reference_targeting_v1",
+        "schema_version": "objective_attribution_v1",
+        "score_basis": "exact",
+        "terms": [
+          {
+            "active": true,
+            "basis": "exact",
+            "category": "hard_constraint",
+            "difference": 0.0,
+            "name": "true_peak_ceiling",
+            "note": "test term",
+            "penalty": 1.0,
+            "target_value": 0.0,
+            "value": 0.0,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "basis": "exact",
+            "category": "reference_alignment",
+            "difference": -1.5,
+            "name": "reference_integrated_lufs",
+            "note": "test term",
+            "penalty": 1.0,
+            "target_value": 0.0,
+            "value": 0.0,
+            "weight": 1.0
+          }
+        ],
+        "total_score": 2.0
+      },
+      "params": {
+        "bass_preservation": 1.0,
+        "brightness": 0.2,
+        "dynamics_preservation": 1.0,
+        "width": 1.0
+      },
+      "rank": 2,
+      "score": 2.0
+    },
+    {
+      "index": 2,
+      "objective_attribution": {
+        "dominant_penalty": 3.5,
+        "dominant_term": "true_peak_ceiling",
+        "reference_basis": "derived",
+        "reference_constraints": [],
+        "reference_targeting_schema_version": "reference_targeting_v1",
+        "schema_version": "objective_attribution_v1",
+        "score_basis": "exact",
+        "terms": [
+          {
+            "active": true,
+            "basis": "exact",
+            "category": "hard_constraint",
+            "difference": 0.0,
+            "name": "true_peak_ceiling",
+            "note": "test term",
+            "penalty": 3.5,
+            "target_value": 0.0,
+            "value": 0.0,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "basis": "exact",
+            "category": "reference_alignment",
+            "difference": -0.5,
+            "name": "reference_integrated_lufs",
+            "note": "test term",
+            "penalty": 0.5,
+            "target_value": 0.0,
+            "value": 0.0,
+            "weight": 1.0
+          }
+        ],
+        "total_score": 4.0
+      },
+      "params": {
+        "bass_preservation": 0.8,
+        "brightness": 0.2,
+        "dynamics_preservation": 0.8,
+        "width": 1.1
+      },
+      "rank": 3,
+      "score": 4.0
+    }
+  ],
+  "context": {
+    "reference_available": true,
+    "reference_targeting_schema_version": "reference_targeting_v1"
+  },
+  "evaluated_candidates": [
+    {
+      "index": 0,
+      "objective_attribution": {
+        "dominant_penalty": 2.0,
+        "dominant_term": "reference_integrated_lufs",
+        "reference_basis": "derived",
+        "reference_constraints": [],
+        "reference_targeting_schema_version": "reference_targeting_v1",
+        "schema_version": "objective_attribution_v1",
+        "score_basis": "exact",
+        "terms": [
+          {
+            "active": true,
+            "basis": "exact",
+            "category": "hard_constraint",
+            "difference": 0.0,
+            "name": "true_peak_ceiling",
+            "note": "test term",
+            "penalty": 0.0,
+            "target_value": 0.0,
+            "value": 0.0,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "basis": "exact",
+            "category": "reference_alignment",
+            "difference": -2.0,
+            "name": "reference_integrated_lufs",
+            "note": "test term",
+            "penalty": 2.0,
+            "target_value": 0.0,
+            "value": 0.0,
+            "weight": 1.0
+          }
+        ],
+        "total_score": 2.0
+      },
+      "params": {
+        "bass_preservation": 1.0,
+        "brightness": 0.0,
+        "dynamics_preservation": 1.0,
+        "width": 1.0
+      },
+      "rank": 1,
+      "score": 2.0
+    },
+    {
+      "index": 1,
+      "objective_attribution": {
+        "dominant_penalty": 1.0,
+        "dominant_term": "true_peak_ceiling",
+        "reference_basis": "derived",
+        "reference_constraints": [],
+        "reference_targeting_schema_version": "reference_targeting_v1",
+        "schema_version": "objective_attribution_v1",
+        "score_basis": "exact",
+        "terms": [
+          {
+            "active": true,
+            "basis": "exact",
+            "category": "hard_constraint",
+            "difference": 0.0,
+            "name": "true_peak_ceiling",
+            "note": "test term",
+            "penalty": 1.0,
+            "target_value": 0.0,
+            "value": 0.0,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "basis": "exact",
+            "category": "reference_alignment",
+            "difference": -1.5,
+            "name": "reference_integrated_lufs",
+            "note": "test term",
+            "penalty": 1.0,
+            "target_value": 0.0,
+            "value": 0.0,
+            "weight": 1.0
+          }
+        ],
+        "total_score": 2.0
+      },
+      "params": {
+        "bass_preservation": 1.0,
+        "brightness": 0.2,
+        "dynamics_preservation": 1.0,
+        "width": 1.0
+      },
+      "rank": 2,
+      "score": 2.0
+    },
+    {
+      "index": 2,
+      "objective_attribution": {
+        "dominant_penalty": 3.5,
+        "dominant_term": "true_peak_ceiling",
+        "reference_basis": "derived",
+        "reference_constraints": [],
+        "reference_targeting_schema_version": "reference_targeting_v1",
+        "schema_version": "objective_attribution_v1",
+        "score_basis": "exact",
+        "terms": [
+          {
+            "active": true,
+            "basis": "exact",
+            "category": "hard_constraint",
+            "difference": 0.0,
+            "name": "true_peak_ceiling",
+            "note": "test term",
+            "penalty": 3.5,
+            "target_value": 0.0,
+            "value": 0.0,
+            "weight": 1.0
+          },
+          {
+            "active": true,
+            "basis": "exact",
+            "category": "reference_alignment",
+            "difference": -0.5,
+            "name": "reference_integrated_lufs",
+            "note": "test term",
+            "penalty": 0.5,
+            "target_value": 0.0,
+            "value": 0.0,
+            "weight": 1.0
+          }
+        ],
+        "total_score": 4.0
+      },
+      "params": {
+        "bass_preservation": 0.8,
+        "brightness": 0.2,
+        "dynamics_preservation": 0.8,
+        "width": 1.1
+      },
+      "rank": 3,
+      "score": 4.0
+    }
+  ],
+  "limitations": [
+    {
+      "code": "BOUNDED_GRID_ONLY",
+      "evidence_level": "exact",
+      "message": "This artifact covers all evaluated candidates in the bounded deterministic grid, not the full continuous parameter space."
+    },
+    {
+      "code": "GLOBAL_OPTIMUM_UNAVAILABLE",
+      "evidence_level": "unavailable",
+      "message": "The optimizer does not record evidence for a global optimum outside the evaluated bounded grid."
+    }
+  ],
+  "reference_metric_tradeoffs": [
+    {
+      "alternative_candidate_index": 2,
+      "alternative_delta_to_reference": -0.5,
+      "alternative_score_delta_vs_winner": 2.0,
+      "blocking_terms": [
+        {
+          "alternative_penalty": 3.5,
+          "category": "hard_constraint",
+          "evidence_level": "exact",
+          "penalty_delta": 3.5,
+          "term": "true_peak_ceiling",
+          "winner_penalty": 0.0
+        }
+      ],
+      "evidence_level": "exact",
+      "metric": "integrated_lufs",
+      "status": "closer_reference_match_rejected",
+      "summary": "A closer reference match existed within the evaluated bounded grid, but it lost on total objective score.",
+      "summary_level": "inferred",
+      "winner_delta_to_reference": -2.0
+    },
+    {
+      "alternative_candidate_index": null,
+      "alternative_delta_to_reference": null,
+      "alternative_score_delta_vs_winner": null,
+      "blocking_terms": [],
+      "evidence_level": "unavailable",
+      "metric": "spectral_tilt_db_per_decade",
+      "status": "unavailable",
+      "summary": "This run did not record enough evaluated evidence to compare this metric honestly.",
+      "summary_level": "unavailable",
+      "winner_delta_to_reference": null
+    },
+    {
+      "alternative_candidate_index": null,
+      "alternative_delta_to_reference": null,
+      "alternative_score_delta_vs_winner": null,
+      "blocking_terms": [],
+      "evidence_level": "unavailable",
+      "metric": "low_band_width",
+      "status": "unavailable",
+      "summary": "This run did not record enough evaluated evidence to compare this metric honestly.",
+      "summary_level": "unavailable",
+      "winner_delta_to_reference": null
+    },
+    {
+      "alternative_candidate_index": null,
+      "alternative_delta_to_reference": null,
+      "alternative_score_delta_vs_winner": null,
+      "blocking_terms": [],
+      "evidence_level": "unavailable",
+      "metric": "mid_band_width",
+      "status": "unavailable",
+      "summary": "This run did not record enough evaluated evidence to compare this metric honestly.",
+      "summary_level": "unavailable",
+      "winner_delta_to_reference": null
+    },
+    {
+      "alternative_candidate_index": null,
+      "alternative_delta_to_reference": null,
+      "alternative_score_delta_vs_winner": null,
+      "blocking_terms": [],
+      "evidence_level": "unavailable",
+      "metric": "crest_factor_db",
+      "status": "unavailable",
+      "summary": "This run did not record enough evaluated evidence to compare this metric honestly.",
+      "summary_level": "unavailable",
+      "winner_delta_to_reference": null
+    },
+    {
+      "alternative_candidate_index": null,
+      "alternative_delta_to_reference": null,
+      "alternative_score_delta_vs_winner": null,
+      "blocking_terms": [],
+      "evidence_level": "unavailable",
+      "metric": "phase_correlation",
+      "status": "unavailable",
+      "summary": "This run did not record enough evaluated evidence to compare this metric honestly.",
+      "summary_level": "unavailable",
+      "winner_delta_to_reference": null
+    },
+    {
+      "alternative_candidate_index": null,
+      "alternative_delta_to_reference": null,
+      "alternative_score_delta_vs_winner": null,
+      "blocking_terms": [],
+      "evidence_level": "unavailable",
+      "metric": "sub_energy_ratio",
+      "status": "unavailable",
+      "summary": "This run did not record enough evaluated evidence to compare this metric honestly.",
+      "summary_level": "unavailable",
+      "winner_delta_to_reference": null
+    },
+    {
+      "alternative_candidate_index": null,
+      "alternative_delta_to_reference": null,
+      "alternative_score_delta_vs_winner": null,
+      "blocking_terms": [],
+      "evidence_level": "unavailable",
+      "metric": "bass_energy_ratio",
+      "status": "unavailable",
+      "summary": "This run did not record enough evaluated evidence to compare this metric honestly.",
+      "summary_level": "unavailable",
+      "winner_delta_to_reference": null
+    },
+    {
+      "alternative_candidate_index": null,
+      "alternative_delta_to_reference": null,
+      "alternative_score_delta_vs_winner": null,
+      "blocking_terms": [],
+      "evidence_level": "unavailable",
+      "metric": "low_energy_ratio",
+      "status": "unavailable",
+      "summary": "This run did not record enough evaluated evidence to compare this metric honestly.",
+      "summary_level": "unavailable",
+      "winner_delta_to_reference": null
+    }
+  ],
+  "runner_up": {
+    "index": 1,
+    "objective_attribution": {
+      "dominant_penalty": 1.0,
+      "dominant_term": "true_peak_ceiling",
+      "reference_basis": "derived",
+      "reference_constraints": [],
+      "reference_targeting_schema_version": "reference_targeting_v1",
+      "schema_version": "objective_attribution_v1",
+      "score_basis": "exact",
+      "terms": [
+        {
+          "active": true,
+          "basis": "exact",
+          "category": "hard_constraint",
+          "difference": 0.0,
+          "name": "true_peak_ceiling",
+          "note": "test term",
+          "penalty": 1.0,
+          "target_value": 0.0,
+          "value": 0.0,
+          "weight": 1.0
+        },
+        {
+          "active": true,
+          "basis": "exact",
+          "category": "reference_alignment",
+          "difference": -1.5,
+          "name": "reference_integrated_lufs",
+          "note": "test term",
+          "penalty": 1.0,
+          "target_value": 0.0,
+          "value": 0.0,
+          "weight": 1.0
+        }
+      ],
+      "total_score": 2.0
+    },
+    "params": {
+      "bass_preservation": 1.0,
+      "brightness": 0.2,
+      "dynamics_preservation": 1.0,
+      "width": 1.0
+    },
+    "rank": 2,
+    "score": 2.0
+  },
+  "schema_version": "decision_history_schema_v1",
+  "search": {
+    "best_tie_break_rule": "first_lowest_score_by_candidate_index",
+    "candidate_count": 3,
+    "exhaustive_within_space": true,
+    "global_optimum_claim": "unavailable",
+    "objective_attribution_schema_version": "objective_attribution_v1",
+    "parameter_axes": {
+      "bass_preservation": [
+        0.8,
+        1.0
+      ],
+      "brightness": [
+        -0.2,
+        0.0,
+        0.2
+      ],
+      "dynamics_preservation": [
+        0.8,
+        1.0
+      ],
+      "width": [
+        0.9,
+        1.0,
+        1.1
+      ]
+    },
+    "ranking_rule": "sort_by_score_then_index",
+    "search_trace_schema_version": "objective_search_trace_v2",
+    "selection_basis": "exact_bounded_grid_search",
+    "space_kind": "bounded_grid"
+  },
+  "selection": {
+    "runner_up_candidate_index": 1,
+    "runner_up_score": 2.0,
+    "score_margin_to_runner_up": 0.0,
+    "tie_count_at_best_score": 2,
+    "winner_candidate_index": 0,
+    "winner_score": 2.0
+  },
+  "selection_tradeoffs": [
+    {
+      "candidate_index": 1,
+      "comparison_basis": "winner_vs_runner_up",
+      "score_delta_vs_winner": 0.0,
+      "separation_terms": [
+        {
+          "alternative_penalty": 1.0,
+          "category": "hard_constraint",
+          "evidence_level": "exact",
+          "penalty_delta": 1.0,
+          "term": "true_peak_ceiling",
+          "winner_penalty": 0.0
+        }
+      ],
+      "summary": "Within the evaluated bounded grid, the winner beat the runner-up on total objective score, with the largest separating penalties in true_peak_ceiling.",
+      "summary_level": "inferred"
+    }
+  ],
+  "winner": {
+    "index": 0,
+    "objective_attribution": {
+      "dominant_penalty": 2.0,
+      "dominant_term": "reference_integrated_lufs",
+      "reference_basis": "derived",
+      "reference_constraints": [],
+      "reference_targeting_schema_version": "reference_targeting_v1",
+      "schema_version": "objective_attribution_v1",
+      "score_basis": "exact",
+      "terms": [
+        {
+          "active": true,
+          "basis": "exact",
+          "category": "hard_constraint",
+          "difference": 0.0,
+          "name": "true_peak_ceiling",
+          "note": "test term",
+          "penalty": 0.0,
+          "target_value": 0.0,
+          "value": 0.0,
+          "weight": 1.0
+        },
+        {
+          "active": true,
+          "basis": "exact",
+          "category": "reference_alignment",
+          "difference": -2.0,
+          "name": "reference_integrated_lufs",
+          "note": "test term",
+          "penalty": 2.0,
+          "target_value": 0.0,
+          "value": 0.0,
+          "weight": 1.0
+        }
+      ],
+      "total_score": 2.0
+    },
+    "params": {
+      "bass_preservation": 1.0,
+      "brightness": 0.0,
+      "dynamics_preservation": 1.0,
+      "width": 1.0
+    },
+    "rank": 1,
+    "score": 2.0
+  }
+}

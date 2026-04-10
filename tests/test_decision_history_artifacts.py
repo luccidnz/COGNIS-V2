@@ -218,6 +218,50 @@ def _fixture_trace() -> SearchTrace:
     )
 
 
+def _tie_heavy_trace() -> SearchTrace:
+    return SearchTrace(
+        schema_version="objective_search_trace_v2",
+        selection_basis="exact_bounded_grid_search",
+        parameter_axes={
+            "brightness": (-0.2, 0.0, 0.2),
+            "width": (0.9, 1.0, 1.1),
+            "bass_preservation": (0.8, 1.0),
+            "dynamics_preservation": (0.8, 1.0),
+        },
+        candidate_count=3,
+        ranking_rule="sort_by_score_then_index",
+        ranked_candidate_indexes=(0, 1, 2),
+        best_index=0,
+        best_params={"bass_preservation": 1.0, "brightness": 0.0, "dynamics_preservation": 1.0, "width": 1.0},
+        best_score=2.0,
+        runner_up_index=1,
+        runner_up_score=2.0,
+        winner_score_margin_to_runner_up=0.0,
+        tie_count_at_best_score=2,
+        score_margin_to_next=2.0,
+        evaluations=(
+            SearchCandidateEvaluation(
+                index=0,
+                params={"bass_preservation": 1.0, "brightness": 0.0, "dynamics_preservation": 1.0, "width": 1.0},
+                score=2.0,
+                attribution=_attr(2.0, "reference_integrated_lufs", -2.0, 0.0, 2.0),
+            ),
+            SearchCandidateEvaluation(
+                index=1,
+                params={"bass_preservation": 1.0, "brightness": 0.2, "dynamics_preservation": 1.0, "width": 1.0},
+                score=2.0,
+                attribution=_attr(2.0, "true_peak_ceiling", -1.5, 1.0, 1.0),
+            ),
+            SearchCandidateEvaluation(
+                index=2,
+                params={"bass_preservation": 0.8, "brightness": 0.2, "dynamics_preservation": 0.8, "width": 1.1},
+                score=4.0,
+                attribution=_attr(4.0, "true_peak_ceiling", -0.5, 3.5, 0.5),
+            ),
+        ),
+    )
+
+
 def _fixture_targets() -> TargetValues:
     return TargetValues(
         target_loudness=-14.0,
@@ -260,6 +304,16 @@ def test_decision_history_ordering_is_deterministic_for_winner_and_runner_up():
     assert [candidate.rank for candidate in artifact.evaluated_candidates] == [1, 2, 3]
 
 
+def test_decision_history_captures_tie_count_and_tie_heavy_ordering():
+    artifact = build_decision_history_artifact(_tie_heavy_trace(), _fixture_targets())
+    assert artifact.selection.tie_count_at_best_score == 2
+    assert artifact.selection.winner_candidate_index == 0
+    assert artifact.selection.runner_up_candidate_index == 1
+    assert artifact.selection.winner_score == 2.0
+    assert artifact.selection.runner_up_score == 2.0
+    assert artifact.selection.score_margin_to_runner_up == 0.0
+
+
 def test_decision_history_labels_exact_and_inferred_and_unavailable_honestly():
     artifact = build_decision_history_artifact(_fixture_trace(), _fixture_targets())
     assert artifact.selection_tradeoffs[0].separation_terms[0].evidence_level == "exact"
@@ -300,3 +354,22 @@ def test_decision_history_does_not_claim_continuous_or_global_search():
     messages = [item.message for item in artifact.limitations]
     assert any("bounded deterministic grid" in message for message in messages)
     assert any("global optimum" in message for message in messages)
+
+def test_decision_history_reports_unavailable_when_metric_evidence_missing():
+    # If the terms in ObjectiveAttribution do not contain the metric, it should correctly report unavailable.
+    trace = _fixture_trace()
+    # The fixture trace doesn't have terms for `reference_sub_energy_ratio` or other newly added metrics.
+    # Therefore, we can assert that they show up as unavailable in the artifact.
+    artifact = build_decision_history_artifact(trace, _fixture_targets())
+
+    unavailable_metrics = {
+        item.metric for item in artifact.reference_metric_tradeoffs
+        if item.status == "unavailable" and item.summary_level == "unavailable"
+    }
+
+    assert "sub_energy_ratio" in unavailable_metrics
+    assert "mid_band_width" in unavailable_metrics
+    assert "phase_correlation" in unavailable_metrics
+
+    sub_energy_tradeoff = next(item for item in artifact.reference_metric_tradeoffs if item.metric == "sub_energy_ratio")
+    assert sub_energy_tradeoff.summary == "This run did not record enough evaluated evidence to compare this metric honestly."

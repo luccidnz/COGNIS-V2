@@ -615,6 +615,10 @@ def render_report_markdown(report: ReportResult) -> str:
             lines.append(f"- Selection basis: `{summary.selection_basis}`")
             lines.append(f"- Evaluated candidates: `{summary.candidate_count}`")
             lines.append(f"- Winner candidate index: `{summary.winner_candidate_index}`")
+
+            if summary.tie_count_at_best_score is not None and summary.tie_count_at_best_score > 1:
+                lines.append("- Multiple candidates tied at the best evaluated score; winner selected deterministically by candidate index.")
+
             if summary.runner_up_candidate_index is not None:
                 lines.append(f"- Runner-up candidate index: `{summary.runner_up_candidate_index}`")
             if summary.score_margin_to_runner_up is not None:

@@ -13,7 +13,12 @@ REFERENCE_METRIC_TERM_NAMES: dict[str, str] = {
     "integrated_lufs": "reference_integrated_lufs",
     "spectral_tilt_db_per_decade": "reference_spectral_tilt_db_per_decade",
     "low_band_width": "reference_low_band_width",
+    "mid_band_width": "reference_mid_band_width",
     "crest_factor_db": "reference_crest_factor_db",
+    "phase_correlation": "reference_phase_correlation",
+    "sub_energy_ratio": "reference_sub_energy_ratio",
+    "bass_energy_ratio": "reference_bass_energy_ratio",
+    "low_energy_ratio": "reference_low_energy_ratio",
 }
 
 
@@ -118,6 +123,7 @@ class DecisionHistorySummary:
     winner_candidate_index: int | None
     runner_up_candidate_index: int | None
     score_margin_to_runner_up: float | None
+    tie_count_at_best_score: int | None
     dominant_tradeoffs: tuple[str, ...]
     limitations: tuple[str, ...]
 
@@ -152,6 +158,7 @@ class DecisionHistoryArtifact:
             winner_candidate_index=self.selection.winner_candidate_index,
             runner_up_candidate_index=self.selection.runner_up_candidate_index,
             score_margin_to_runner_up=self.selection.score_margin_to_runner_up,
+            tie_count_at_best_score=self.selection.tie_count_at_best_score,
             dominant_tradeoffs=dominant_tradeoffs,
             limitations=tuple(item.message for item in self.limitations),
         )
@@ -166,6 +173,7 @@ def unavailable_decision_history_summary(reason: str) -> DecisionHistorySummary:
         winner_candidate_index=None,
         runner_up_candidate_index=None,
         score_margin_to_runner_up=None,
+        tie_count_at_best_score=None,
         dominant_tradeoffs=(),
         limitations=(reason,),
     )
