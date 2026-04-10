@@ -1,0 +1,594 @@
+{
+  "achieved": {
+    "clipping_risk_estimate": 0.0,
+    "codec_risk_estimate": 0.0,
+    "crest_factor_db": 5.924211581484441,
+    "integrated_lufs": -14.525054318566323,
+    "limiter_stress_estimate": 0.15368405978793703,
+    "low_band_width": 0.43348397106700437,
+    "momentary_max_lufs": -14.525054318566323,
+    "mono_compatibility_score": 0.5645760999635182,
+    "phase_correlation": 0.1291521999270365,
+    "sample_peak_dbfs": -8.521952998393248,
+    "short_term_max_lufs": -14.525054318566323,
+    "spectral_tilt_db_per_decade": -4.39332748811578,
+    "true_peak_dbfs": -8.521952998393248
+  },
+  "analysis_schema_version": "analysis_schema_v2",
+  "decision_history_summary": {
+    "available": true,
+    "candidate_count": 36,
+    "dominant_tradeoffs": [
+      "Within the evaluated bounded grid, the winner beat the runner-up on total objective score, but no positive per-term penalty separation was recorded."
+    ],
+    "limitations": [
+      "This artifact covers all evaluated candidates in the bounded deterministic grid, not the full continuous parameter space.",
+      "The optimizer does not record evidence for a global optimum outside the evaluated bounded grid."
+    ],
+    "runner_up_candidate_index": 12,
+    "schema_version": "decision_history_schema_v1",
+    "score_margin_to_runner_up": 9.094947017729282e-13,
+    "selection_basis": "exact_bounded_grid_search",
+    "tie_count_at_best_score": 2,
+    "winner_candidate_index": 13
+  },
+  "delta": {
+    "codec_safety_margin_db": 7.521952998393248,
+    "crest_factor_delta_db": -3.0757884185155593,
+    "loudness_delta_lu": -0.5250543185663226,
+    "low_band_width_delta": 0.43348397106700437,
+    "phase_correlation_delta": 0.13585166805731722,
+    "sample_peak_margin_db": 8.521952998393248,
+    "spectral_tilt_delta": 0.11521594159290327,
+    "true_peak_margin_db": 7.521952998393248
+  },
+  "findings": [
+    {
+      "code": "LOW_BAND_WIDTH_CRITICAL",
+      "evidence": [
+        {
+          "comparator": "<=",
+          "metric": "low_band_width",
+          "threshold": 0.2,
+          "unit": "ratio",
+          "value": 0.43348397106700437
+        }
+      ],
+      "message": "Low-band stereo width materially exceeds the requested mono-safety target.",
+      "severity": "fail"
+    },
+    {
+      "code": "DYNAMICS_COLLAPSE_RISK",
+      "evidence": [
+        {
+          "comparator": ">=",
+          "metric": "crest_factor_db",
+          "threshold": 8.0,
+          "unit": "dB",
+          "value": 5.924211581484441
+        }
+      ],
+      "message": "Crest factor fell materially below the requested dynamics-preservation target.",
+      "severity": "warning"
+    },
+    {
+      "code": "LOUDNESS_OUTSIDE_TARGET_TOLERANCE",
+      "evidence": [
+        {
+          "comparator": "<=",
+          "metric": "loudness_delta_lu",
+          "threshold": 0.5,
+          "unit": "LU",
+          "value": -0.5250543185663226
+        }
+      ],
+      "message": "Integrated loudness is outside the preferred target tolerance.",
+      "severity": "warning"
+    },
+    {
+      "code": "PHASE_CORRELATION_LOW",
+      "evidence": [
+        {
+          "comparator": ">=",
+          "metric": "phase_correlation",
+          "threshold": 0.2,
+          "unit": "ratio",
+          "value": 0.1291521999270365
+        }
+      ],
+      "message": "Phase correlation is low and may reduce mono compatibility.",
+      "severity": "warning"
+    },
+    {
+      "code": "CODEC_SAFE_MARGIN_OK",
+      "evidence": [
+        {
+          "comparator": "<",
+          "metric": "codec_risk_estimate",
+          "threshold": 0.75,
+          "unit": "score",
+          "value": 0.0
+        }
+      ],
+      "message": "Codec-safety proxy remains within the preferred range.",
+      "severity": "informational"
+    },
+    {
+      "code": "TONAL_BALANCE_WITHIN_EXPECTED_RANGE",
+      "evidence": [
+        {
+          "comparator": "<=",
+          "metric": "low_mid_balance_db",
+          "threshold": 12.0,
+          "unit": "dB",
+          "value": 11.915125012243251
+        },
+        {
+          "comparator": "<=",
+          "metric": "high_mid_balance_db",
+          "threshold": 12.0,
+          "unit": "dB",
+          "value": -1.5830683650506776
+        }
+      ],
+      "message": "Measured tonal balance stays within the expected operating range.",
+      "severity": "informational"
+    },
+    {
+      "code": "TRUE_PEAK_WITHIN_MARGIN",
+      "evidence": [
+        {
+          "comparator": ">=",
+          "metric": "true_peak_margin_db",
+          "threshold": 0.3,
+          "unit": "dB",
+          "value": 7.521952998393248
+        }
+      ],
+      "message": "True peak stays within the requested ceiling margin.",
+      "severity": "informational"
+    }
+  ],
+  "overall_status": "fail",
+  "recipe_schema_version": "recipe_v2",
+  "reference_assessment": {
+    "attribution": {
+      "availability_reason": null,
+      "available": true,
+      "entries": [
+        {
+          "attribution_level": "exact",
+          "category": "loudness_ceiling_constraint",
+          "decision": "capped_by_loudness_baseline",
+          "evidence": [
+            {
+              "comparator": null,
+              "metric": "reference_loudness",
+              "threshold": null,
+              "unit": "LUFS",
+              "value": -13.075417986501776
+            },
+            {
+              "comparator": null,
+              "metric": "reference_target",
+              "threshold": null,
+              "unit": "LUFS",
+              "value": -14.0
+            },
+            {
+              "comparator": null,
+              "metric": "loudness_baseline",
+              "threshold": null,
+              "unit": "LUFS",
+              "value": -14.0
+            }
+          ],
+          "explanation": "Integrated loudness remained conservative because the reference-aware target was capped at -14.00 LUFS instead of chasing the -13.08 LUFS reference.",
+          "metric": "integrated_lufs",
+          "required_change": "Raise `target_loudness` or loosen the loudness baseline policy.",
+          "tradeoff": "Configured loudness target over a closer reference match."
+        },
+        {
+          "attribution_level": "exact",
+          "category": "mono_low_band_width_safety",
+          "decision": "held_by_mono_safety",
+          "evidence": [
+            {
+              "comparator": null,
+              "metric": "reference_low_band_width",
+              "threshold": null,
+              "unit": "ratio",
+              "value": 0.503106843914701
+            },
+            {
+              "comparator": null,
+              "metric": "reference_target_low_band_width",
+              "threshold": null,
+              "unit": "ratio",
+              "value": 0.0
+            },
+            {
+              "comparator": null,
+              "metric": "low_band_width_baseline",
+              "threshold": null,
+              "unit": "ratio",
+              "value": 0.0
+            }
+          ],
+          "explanation": "Low-band width remained 0.07 ratio narrower than the reference because the mono-safety target was capped at 0.00.",
+          "metric": "low_band_width",
+          "required_change": "Relax bass preservation or allow a wider low-band cap.",
+          "tradeoff": "Mono safety over a wider low-band match."
+        },
+        {
+          "attribution_level": "exact",
+          "category": "dynamics_preservation_constraint",
+          "decision": "matched_to_reference",
+          "evidence": [
+            {
+              "comparator": "<=",
+              "metric": "crest_factor_delta_to_reference",
+              "threshold": 1.0,
+              "unit": "dB",
+              "value": 0.4482431205802504
+            }
+          ],
+          "explanation": "Crest factor matched the reference within tolerance.",
+          "metric": "crest_factor_db",
+          "required_change": "No change required.",
+          "tradeoff": "No tradeoff was required."
+        },
+        {
+          "attribution_level": "exact",
+          "category": "tonal_correction_limit",
+          "decision": "matched_to_reference",
+          "evidence": [
+            {
+              "comparator": "<=",
+              "metric": "spectral_tilt_delta_to_reference",
+              "threshold": 0.75,
+              "unit": "dB/decade",
+              "value": 0.11521594159290327
+            }
+          ],
+          "explanation": "Spectral tilt matched the reference within tolerance.",
+          "metric": "spectral_tilt_db_per_decade",
+          "required_change": "No change required.",
+          "tradeoff": "No tradeoff was required."
+        }
+      ],
+      "schema_version": "reference_attribution_schema_v1"
+    },
+    "comparisons": [
+      {
+        "explanation": "output moved farther from the reference",
+        "input_delta_to_reference": 0.9151398503433334,
+        "input_value": -12.160278136158443,
+        "label": "Integrated loudness",
+        "metric": "integrated_lufs",
+        "movement_toward_reference": -0.534496481721213,
+        "output_delta_to_reference": -1.4496363320645465,
+        "output_value": -14.525054318566323,
+        "reference_value": -13.075417986501776,
+        "status": "moved_away",
+        "tolerance": 0.5,
+        "unit": "LUFS"
+      },
+      {
+        "explanation": "output moved farther from the reference",
+        "input_delta_to_reference": 0.9147729746495363,
+        "input_value": -6.5777821203006255,
+        "label": "True peak",
+        "metric": "true_peak_dbfs",
+        "movement_toward_reference": -0.11462492879354969,
+        "output_delta_to_reference": -1.029397903443086,
+        "output_value": -8.521952998393248,
+        "reference_value": -7.492555094950162,
+        "status": "moved_away",
+        "tolerance": 0.3,
+        "unit": "dBFS"
+      },
+      {
+        "explanation": "output landed within the reference tolerance",
+        "input_delta_to_reference": -0.11889273514682053,
+        "input_value": -4.627436164855504,
+        "label": "Spectral tilt",
+        "metric": "spectral_tilt_db_per_decade",
+        "movement_toward_reference": 0.003676793553917257,
+        "output_delta_to_reference": 0.11521594159290327,
+        "output_value": -4.39332748811578,
+        "reference_value": -4.508543429708683,
+        "status": "matched",
+        "tolerance": 0.75,
+        "unit": "dB/decade"
+      },
+      {
+        "explanation": "output landed within the reference tolerance",
+        "input_delta_to_reference": 0.0002239010197939706,
+        "input_value": 11.93744827079064,
+        "label": "Low-mid balance",
+        "metric": "low_mid_balance_db",
+        "movement_toward_reference": -0.021875456507800095,
+        "output_delta_to_reference": -0.022099357527594066,
+        "output_value": 11.915125012243251,
+        "reference_value": 11.937224369770846,
+        "status": "matched",
+        "tolerance": 1.0,
+        "unit": "dB"
+      },
+      {
+        "explanation": "output landed within the reference tolerance",
+        "input_delta_to_reference": -0.0010576195974323355,
+        "input_value": -1.5789835705266428,
+        "label": "High-mid balance",
+        "metric": "high_mid_balance_db",
+        "movement_toward_reference": -0.004084794524034763,
+        "output_delta_to_reference": -0.005142414121467098,
+        "output_value": -1.5830683650506776,
+        "reference_value": -1.5779259509292105,
+        "status": "matched",
+        "tolerance": 1.0,
+        "unit": "dB"
+      },
+      {
+        "explanation": "output landed within the reference tolerance",
+        "input_delta_to_reference": -3.0517513208001926e-10,
+        "input_value": 6.684388749141741e-06,
+        "label": "Sub energy ratio",
+        "metric": "sub_energy_ratio",
+        "movement_toward_reference": -3.169370659924096e-09,
+        "output_delta_to_reference": -3.4745457920041153e-09,
+        "output_value": 6.681219378481817e-06,
+        "reference_value": 6.684693924273821e-06,
+        "status": "matched",
+        "tolerance": 0.05,
+        "unit": "ratio"
+      },
+      {
+        "explanation": "output landed within the reference tolerance",
+        "input_delta_to_reference": 9.848060241013368e-06,
+        "input_value": 0.486702574494794,
+        "label": "Bass energy ratio",
+        "metric": "bass_energy_ratio",
+        "movement_toward_reference": -0.00021109422695658742,
+        "output_delta_to_reference": -0.00022094228719760078,
+        "output_value": 0.48647178414735537,
+        "reference_value": 0.48669272643455297,
+        "status": "matched",
+        "tolerance": 0.05,
+        "unit": "ratio"
+      },
+      {
+        "explanation": "output moved farther from the reference",
+        "input_delta_to_reference": 2.319924687910202e-07,
+        "input_value": 0.5031070759071697,
+        "label": "Low-band width",
+        "metric": "low_band_width",
+        "movement_toward_reference": -0.06962264085522779,
+        "output_delta_to_reference": -0.06962287284769658,
+        "output_value": 0.43348397106700437,
+        "reference_value": 0.503106843914701,
+        "status": "moved_away",
+        "tolerance": 0.05,
+        "unit": "ratio"
+      },
+      {
+        "explanation": "output moved farther from the reference",
+        "input_delta_to_reference": 4.185793440747432e-07,
+        "input_value": 0.5007571431890174,
+        "label": "Mid-band width",
+        "metric": "mid_band_width",
+        "movement_toward_reference": -0.05677054548267019,
+        "output_delta_to_reference": -0.05677096406201426,
+        "output_value": 0.4439857605476591,
+        "reference_value": 0.5007567246096734,
+        "status": "moved_away",
+        "tolerance": 0.05,
+        "unit": "ratio"
+      },
+      {
+        "explanation": "output moved farther from the reference",
+        "input_delta_to_reference": -7.242805522868212e-07,
+        "input_value": -0.006699468130280709,
+        "label": "Phase correlation",
+        "metric": "phase_correlation",
+        "movement_toward_reference": -0.13585021949621265,
+        "output_delta_to_reference": 0.13585094377676493,
+        "output_value": 0.1291521999270365,
+        "reference_value": -0.006698743849728422,
+        "status": "moved_away",
+        "tolerance": 0.05,
+        "unit": "ratio"
+      },
+      {
+        "explanation": "output landed within the reference tolerance",
+        "input_delta_to_reference": -0.000366529348883482,
+        "input_value": 5.475601931555307,
+        "label": "Crest factor",
+        "metric": "crest_factor_db",
+        "movement_toward_reference": -0.4478765912313669,
+        "output_delta_to_reference": 0.4482431205802504,
+        "output_value": 5.924211581484441,
+        "reference_value": 5.47596846090419,
+        "status": "matched",
+        "tolerance": 1.0,
+        "unit": "dB"
+      }
+    ],
+    "findings": [
+      {
+        "code": "REFERENCE_LOUDNESS_MOVED_AWAY",
+        "evidence": [
+          {
+            "comparator": ">",
+            "metric": "loudness_delta_to_reference",
+            "threshold": 0.5,
+            "unit": "LUFS",
+            "value": -1.4496363320645465
+          }
+        ],
+        "message": "Integrated loudness moved away from the reference by 0.53 LUFS; 1.45 LUFS remain.",
+        "severity": "warning"
+      },
+      {
+        "code": "REFERENCE_TONAL_MATCHED",
+        "evidence": [
+          {
+            "comparator": "<=",
+            "metric": "spectral_tilt_db_per_decade",
+            "threshold": 0.75,
+            "unit": "dB/decade",
+            "value": 0.11521594159290327
+          },
+          {
+            "comparator": "<=",
+            "metric": "high_mid_balance_db",
+            "threshold": 1.0,
+            "unit": "dB",
+            "value": -0.005142414121467098
+          }
+        ],
+        "message": "Tonal balance matched the reference within tolerance.",
+        "severity": "informational"
+      },
+      {
+        "code": "REFERENCE_LOW_END_DEVIATION",
+        "evidence": [
+          {
+            "comparator": ">",
+            "metric": "sub_energy_ratio",
+            "threshold": 0.05,
+            "unit": "ratio",
+            "value": -3.4745457920041153e-09
+          },
+          {
+            "comparator": ">",
+            "metric": "bass_energy_ratio",
+            "threshold": 0.05,
+            "unit": "ratio",
+            "value": -0.00022094228719760078
+          }
+        ],
+        "message": "Low-band width moved 0.07 ratio toward the reference; sub energy and bass energy remain 0.00 and 0.00 ratio from it.",
+        "severity": "warning"
+      },
+      {
+        "code": "REFERENCE_STEREO_WIDTH_DEVIATION",
+        "evidence": [
+          {
+            "comparator": ">",
+            "metric": "mid_band_width",
+            "threshold": 0.05,
+            "unit": "ratio",
+            "value": -0.05677096406201426
+          }
+        ],
+        "message": "Mid-band width moved 0.06 ratio toward the reference; residual gap is 0.06 ratio.",
+        "severity": "warning"
+      },
+      {
+        "code": "REFERENCE_DYNAMICS_MATCHED",
+        "evidence": [
+          {
+            "comparator": "<=",
+            "metric": "crest_factor_db",
+            "threshold": 1.0,
+            "unit": "dB",
+            "value": 0.4482431205802504
+          }
+        ],
+        "message": "Crest factor matched the reference within tolerance.",
+        "severity": "informational"
+      }
+    ],
+    "outcome": "deviated",
+    "reference_analysis_identity": {
+      "analyzer_version": "cognis_analyzer_v2",
+      "channels": 2,
+      "duration_s": 0.25,
+      "role": "reference",
+      "sample_rate_hz": 48000,
+      "samples": 12000,
+      "schema_version": "analysis_schema_v2",
+      "source_name": "reference.wav",
+      "source_path": ".tmp/test-cli-reference-run/reference.wav"
+    },
+    "reference_analysis_schema_version": "analysis_schema_v2",
+    "reference_path": ".tmp/test-cli-reference-run/reference.wav",
+    "schema_version": "reference_assessment_schema_v2",
+    "summary": [
+      {
+        "category": "loudness",
+        "message": "Integrated loudness moved away from the reference by 0.53 LUFS; 1.45 LUFS remain."
+      },
+      {
+        "category": "tonal",
+        "message": "Tonal balance matched the reference within tolerance."
+      },
+      {
+        "category": "low_end",
+        "message": "Low-band width moved 0.07 ratio toward the reference; sub energy and bass energy remain 0.00 and 0.00 ratio from it."
+      },
+      {
+        "category": "stereo",
+        "message": "Mid-band width moved 0.06 ratio toward the reference; residual gap is 0.06 ratio."
+      },
+      {
+        "category": "dynamics",
+        "message": "Crest factor matched the reference within tolerance."
+      }
+    ]
+  },
+  "requested": {
+    "bass_preservation": 1.0,
+    "brightness": 0.0,
+    "ceiling_dbfs": -1.0,
+    "ceiling_mode": "TRUE_PEAK",
+    "codec_safe_requested": false,
+    "dynamics_preservation": 1.0,
+    "fir_backend": "AUTO",
+    "mode": "REFERENCE_MATCH",
+    "reference_path": ".tmp/test-cli-reference-run/reference.wav",
+    "stereo_width": 1.0,
+    "target_loudness_lufs": -14.0
+  },
+  "schema_version": "report_schema_v4",
+  "summary": [
+    {
+      "category": "loudness",
+      "message": "Reduced integrated loudness by 2.36 LUFS."
+    },
+    {
+      "category": "stereo",
+      "message": "Narrowed sub / low-band stereo width by 0.07 ratio."
+    },
+    {
+      "category": "dynamics",
+      "message": "Measured crest factor fell below the requested dynamics-preservation tolerance."
+    },
+    {
+      "category": "safety",
+      "message": "Render failed QC and is not release-ready under the current measured constraints."
+    },
+    {
+      "category": "reference:loudness",
+      "message": "Integrated loudness moved away from the reference by 0.53 LUFS; 1.45 LUFS remain."
+    },
+    {
+      "category": "reference:tonal",
+      "message": "Tonal balance matched the reference within tolerance."
+    },
+    {
+      "category": "reference:low_end",
+      "message": "Low-band width moved 0.07 ratio toward the reference; sub energy and bass energy remain 0.00 and 0.00 ratio from it."
+    },
+    {
+      "category": "reference:stereo",
+      "message": "Mid-band width moved 0.06 ratio toward the reference; residual gap is 0.06 ratio."
+    },
+    {
+      "category": "reference:dynamics",
+      "message": "Crest factor matched the reference within tolerance."
+    }
+  ]
+}

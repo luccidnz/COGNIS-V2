@@ -1,0 +1,65 @@
+{
+  "identity": {
+    "analyzer_version": "cognis_analyzer_v2",
+    "channels": 2,
+    "duration_s": 0.5,
+    "role": "reference",
+    "sample_rate_hz": 48000,
+    "samples": 24000,
+    "schema_version": "analysis_schema_v2",
+    "source_name": "reference",
+    "source_path": "reference.wav"
+  },
+  "loudness": {
+    "crest_factor_db": 5.989644317390803,
+    "integrated_lufs": -8.288236940422768,
+    "loudness_range_lu": 0.0,
+    "momentary_max_lufs": -8.279804322904882,
+    "momentary_mean_lufs": -8.288245143082875,
+    "momentary_min_lufs": -8.296685963260868,
+    "peak_to_loudness_ratio_lu": 3.632575244235867,
+    "sample_peak_dbfs": -4.662216106599206,
+    "short_term_max_lufs": -8.288236940422768,
+    "short_term_mean_lufs": -8.288236940422768,
+    "short_term_min_lufs": -8.288236940422768,
+    "short_term_range_lu": 0.0,
+    "true_peak_dbfs": -4.655661696186901
+  },
+  "notes": {
+    "codec_risk_is_proxy": true,
+    "limiter_stress_is_proxy": true,
+    "loudness_range_available": false,
+    "momentary_available": true
+  },
+  "risks": {
+    "clipped_sample_count": 0,
+    "clipped_sample_ratio": 0.0,
+    "clipping_risk_estimate": 0.0,
+    "codec_headroom_margin_db": 3.6556616961869013,
+    "codec_risk_estimate": 0.003277205206152267,
+    "delivery_safety_estimate": 0.9480074735267716,
+    "hot_sample_ratio": 0.0,
+    "intersample_peak_excess_db": 0.006554410412304534,
+    "limiter_stress_estimate": 0.14433652608702818,
+    "near_full_scale_ratio": 0.0
+  },
+  "stereo": {
+    "high_band_width": 0.5000441164692596,
+    "left_right_balance_db": 1.234488741034602,
+    "low_band_width": 0.5002805493985291,
+    "mid_band_width": 0.49990459489722966,
+    "mono_null_ratio_db": -4.821637332766436e-15,
+    "phase_correlation": 6.402419542802717e-16,
+    "side_energy_ratio": 0.4999999999999998
+  },
+  "tonal": {
+    "bass_energy_ratio": 0.476362022338347,
+    "high_energy_ratio": 0.0529763674797133,
+    "high_mid_balance_db": -2.496142513746477,
+    "low_band_centroid_hz": 112.06897881747089,
+    "low_energy_ratio": 0.8529004397366239,
+    "low_mid_balance_db": 9.572017015901524,
+    "spectral_tilt_db_per_decade": -4.967688294122946,
+    "sub_energy_ratio": 9.752720003211533e-05
+  }
+}

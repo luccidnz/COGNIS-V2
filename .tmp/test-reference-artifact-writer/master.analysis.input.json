@@ -1,0 +1,65 @@
+{
+  "identity": {
+    "analyzer_version": "cognis_analyzer_v2",
+    "channels": 2,
+    "duration_s": 0.5,
+    "role": "input",
+    "sample_rate_hz": 48000,
+    "samples": 24000,
+    "schema_version": "analysis_schema_v2",
+    "source_name": "input",
+    "source_path": null
+  },
+  "loudness": {
+    "crest_factor_db": 5.989644317242235,
+    "integrated_lufs": -7.373087129209286,
+    "loudness_range_lu": 0.0,
+    "momentary_max_lufs": -7.364654511691408,
+    "momentary_mean_lufs": -7.373095331869392,
+    "momentary_min_lufs": -7.381536152047375,
+    "peak_to_loudness_ratio_lu": 3.63257524408743,
+    "sample_peak_dbfs": -3.747066295534272,
+    "short_term_max_lufs": -7.373087129209286,
+    "short_term_mean_lufs": -7.373087129209286,
+    "short_term_min_lufs": -7.373087129209286,
+    "short_term_range_lu": 0.0,
+    "true_peak_dbfs": -3.740511885121856
+  },
+  "notes": {
+    "codec_risk_is_proxy": true,
+    "limiter_stress_is_proxy": true,
+    "loudness_range_available": false,
+    "momentary_available": true
+  },
+  "risks": {
+    "clipped_sample_count": 0,
+    "clipped_sample_ratio": 0.0,
+    "clipping_risk_estimate": 0.0,
+    "codec_headroom_margin_db": 2.740511885121856,
+    "codec_risk_estimate": 0.0032772052062080004,
+    "delivery_safety_estimate": 0.9480074735193181,
+    "hot_sample_ratio": 0.0,
+    "intersample_peak_excess_db": 0.006554410412416001,
+    "limiter_stress_estimate": 0.1443365261082521,
+    "near_full_scale_ratio": 0.0
+  },
+  "stereo": {
+    "high_band_width": 0.5000441164692596,
+    "left_right_balance_db": 1.2344887410769319,
+    "low_band_width": 0.5002805493985294,
+    "mid_band_width": 0.499904594897236,
+    "mono_null_ratio_db": -4.821637332766436e-15,
+    "phase_correlation": 6.382178514940185e-16,
+    "side_energy_ratio": 0.49999999999999967
+  },
+  "tonal": {
+    "bass_energy_ratio": 0.47636611505182064,
+    "high_energy_ratio": 0.052969832305891154,
+    "high_mid_balance_db": -2.496642861430551,
+    "low_band_centroid_hz": 112.06897727142254,
+    "low_energy_ratio": 0.852907751996209,
+    "low_mid_balance_db": 9.572090078930026,
+    "spectral_tilt_db_per_decade": -5.083257773666063,
+    "sub_energy_ratio": 9.752803794711885e-05
+  }
+}

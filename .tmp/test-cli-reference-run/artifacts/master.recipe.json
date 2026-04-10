@@ -1,0 +1,164 @@
+{
+  "config": {
+    "bass_preservation": 1.0,
+    "brightness": 0.0,
+    "ceiling_db": -1.0,
+    "ceiling_mode": "TRUE_PEAK",
+    "dynamics_preservation": 1.0,
+    "fir_backend": "AUTO",
+    "mode": "REFERENCE_MATCH",
+    "oversampling": 4,
+    "reference_path": ".tmp/test-cli-reference-run/reference.wav",
+    "stereo_width": 1.0,
+    "target_loudness": -14.0
+  },
+  "derived_targets": {
+    "ceiling_db": -1.0,
+    "reference_targeting": {
+      "alignment_index": 0.09614022370207315,
+      "guidance": [
+        "Use the reference as a measured tonal and dynamics guide, not a blind copy.",
+        "Keep true-peak and mono-safety limits ahead of reference matching.",
+        "Treat the reference loudness and stereo shape as goals only when they do not violate safety constraints."
+      ],
+      "input_vs_reference": {
+        "bass_energy_ratio_delta": -9.848060241013368e-06,
+        "crest_factor_db_delta": 0.000366529348883482,
+        "high_mid_balance_db_delta": 0.0010576195974323355,
+        "integrated_lufs_delta": -0.9151398503433334,
+        "low_band_width_delta": -2.319924687910202e-07,
+        "low_energy_ratio_delta": -1.3366071342391095e-05,
+        "low_mid_balance_db_delta": -0.0002239010197939706,
+        "mid_band_width_delta": -4.185793440747432e-07,
+        "phase_correlation_delta": 7.242805522868212e-07,
+        "spectral_tilt_db_per_decade_delta": 0.11889273514682053,
+        "sub_energy_ratio_delta": 3.0517513208001926e-10
+      },
+      "reference_analysis_schema_version": "analysis_schema_v2",
+      "reference_identity": {
+        "analyzer_version": "cognis_analyzer_v2",
+        "channels": 2,
+        "duration_s": 0.25,
+        "role": "reference",
+        "sample_rate_hz": 48000,
+        "samples": 12000,
+        "schema_version": "analysis_schema_v2",
+        "source_name": "reference.wav",
+        "source_path": ".tmp/test-cli-reference-run/reference.wav"
+      },
+      "reference_targets": {
+        "bass_energy_ratio": 0.48669272643455297,
+        "crest_factor_db": 5.47596846090419,
+        "high_mid_balance_db": -1.5779259509292105,
+        "integrated_lufs": -13.075417986501776,
+        "low_band_width": 0.503106843914701,
+        "low_energy_ratio": 0.9020978933178312,
+        "low_mid_balance_db": 11.937224369770846,
+        "mid_band_width": 0.5007567246096734,
+        "phase_correlation": -0.006698743849728422,
+        "spectral_tilt_db_per_decade": -4.508543429708683,
+        "sub_energy_ratio": 6.684693924273821e-06
+      },
+      "safety_constraints": {
+        "ceiling_db": -1.0,
+        "codec_safe_requested": false,
+        "crest_factor_floor_db": 8.0,
+        "low_band_width_cap": 0.1,
+        "phase_correlation_floor": 0.2,
+        "reference_loudness_limit_db": -14.0,
+        "true_peak_margin_floor_db": 0.0
+      },
+      "schema_version": "reference_targeting_v1"
+    },
+    "target_crest_factor": 9.0,
+    "target_high_mid_balance": -1.5779259509292105,
+    "target_loudness": -14.0,
+    "target_low_band_width": 0.0,
+    "target_low_energy_ratio": 0.9020978933178312,
+    "target_low_mid_balance": 11.937224369770846,
+    "target_side_energy_ratio": 0.5033331599921829,
+    "target_sub_energy_ratio": 6.684693924273821e-06,
+    "target_tilt": -4.508543429708683,
+    "target_width": 0.5007567246096734
+  },
+  "params": {
+    "bass_preservation": 0.8,
+    "brightness": 0.0,
+    "dynamics_preservation": 1.0,
+    "width": 0.9
+  },
+  "render_context": {
+    "makeup_gain_db": -2.417503984142183,
+    "targets": {
+      "ceiling_db": -1.0,
+      "reference_targeting": {
+        "alignment_index": 0.09614022370207315,
+        "guidance": [
+          "Use the reference as a measured tonal and dynamics guide, not a blind copy.",
+          "Keep true-peak and mono-safety limits ahead of reference matching.",
+          "Treat the reference loudness and stereo shape as goals only when they do not violate safety constraints."
+        ],
+        "input_vs_reference": {
+          "bass_energy_ratio_delta": -9.848060241013368e-06,
+          "crest_factor_db_delta": 0.000366529348883482,
+          "high_mid_balance_db_delta": 0.0010576195974323355,
+          "integrated_lufs_delta": -0.9151398503433334,
+          "low_band_width_delta": -2.319924687910202e-07,
+          "low_energy_ratio_delta": -1.3366071342391095e-05,
+          "low_mid_balance_db_delta": -0.0002239010197939706,
+          "mid_band_width_delta": -4.185793440747432e-07,
+          "phase_correlation_delta": 7.242805522868212e-07,
+          "spectral_tilt_db_per_decade_delta": 0.11889273514682053,
+          "sub_energy_ratio_delta": 3.0517513208001926e-10
+        },
+        "reference_analysis_schema_version": "analysis_schema_v2",
+        "reference_identity": {
+          "analyzer_version": "cognis_analyzer_v2",
+          "channels": 2,
+          "duration_s": 0.25,
+          "role": "reference",
+          "sample_rate_hz": 48000,
+          "samples": 12000,
+          "schema_version": "analysis_schema_v2",
+          "source_name": "reference.wav",
+          "source_path": ".tmp/test-cli-reference-run/reference.wav"
+        },
+        "reference_targets": {
+          "bass_energy_ratio": 0.48669272643455297,
+          "crest_factor_db": 5.47596846090419,
+          "high_mid_balance_db": -1.5779259509292105,
+          "integrated_lufs": -13.075417986501776,
+          "low_band_width": 0.503106843914701,
+          "low_energy_ratio": 0.9020978933178312,
+          "low_mid_balance_db": 11.937224369770846,
+          "mid_band_width": 0.5007567246096734,
+          "phase_correlation": -0.006698743849728422,
+          "spectral_tilt_db_per_decade": -4.508543429708683,
+          "sub_energy_ratio": 6.684693924273821e-06
+        },
+        "safety_constraints": {
+          "ceiling_db": -1.0,
+          "codec_safe_requested": false,
+          "crest_factor_floor_db": 8.0,
+          "low_band_width_cap": 0.1,
+          "phase_correlation_floor": 0.2,
+          "reference_loudness_limit_db": -14.0,
+          "true_peak_margin_floor_db": 0.0
+        },
+        "schema_version": "reference_targeting_v1"
+      },
+      "target_crest_factor": 9.0,
+      "target_high_mid_balance": -1.5779259509292105,
+      "target_loudness": -14.0,
+      "target_low_band_width": 0.0,
+      "target_low_energy_ratio": 0.9020978933178312,
+      "target_low_mid_balance": 11.937224369770846,
+      "target_side_energy_ratio": 0.5033331599921829,
+      "target_sub_energy_ratio": 6.684693924273821e-06,
+      "target_tilt": -4.508543429708683,
+      "target_width": 0.5007567246096734
+    },
+    "trim_gain_db": 0.5777821203006255
+  },
+  "schema_version": "recipe_v2"
+}

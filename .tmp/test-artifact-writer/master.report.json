@@ -1,0 +1,171 @@
+{
+  "achieved": {
+    "clipping_risk_estimate": 0.0,
+    "codec_risk_estimate": 0.0028799683002809218,
+    "crest_factor_db": 6.521601692232451,
+    "integrated_lufs": -14.512979834429265,
+    "limiter_stress_estimate": 0.0683426153953641,
+    "low_band_width": 0.41834459634376037,
+    "momentary_max_lufs": -14.504498404232672,
+    "mono_compatibility_score": 0.5759372757300636,
+    "phase_correlation": 0.1518745514601272,
+    "sample_peak_dbfs": -10.620108562268786,
+    "short_term_max_lufs": -14.512979834429265,
+    "spectral_tilt_db_per_decade": -4.280436091120614,
+    "true_peak_dbfs": -10.614348625668224
+  },
+  "analysis_schema_version": "analysis_schema_v2",
+  "decision_history_summary": null,
+  "delta": {
+    "codec_safety_margin_db": 9.614348625668224,
+    "crest_factor_delta_db": -0.9783983077675487,
+    "loudness_delta_lu": -0.5129798344292649,
+    "low_band_width_delta": 0.3183445963437604,
+    "phase_correlation_delta": 0.15187455146012657,
+    "sample_peak_margin_db": 10.620108562268786,
+    "spectral_tilt_delta": -4.580436091120614,
+    "true_peak_margin_db": 9.614348625668224
+  },
+  "findings": [
+    {
+      "code": "LOW_BAND_WIDTH_CRITICAL",
+      "evidence": [
+        {
+          "comparator": "<=",
+          "metric": "low_band_width",
+          "threshold": 0.3,
+          "unit": "ratio",
+          "value": 0.41834459634376037
+        }
+      ],
+      "message": "Low-band stereo width materially exceeds the requested mono-safety target.",
+      "severity": "fail"
+    },
+    {
+      "code": "LOUDNESS_OUTSIDE_TARGET_TOLERANCE",
+      "evidence": [
+        {
+          "comparator": "<=",
+          "metric": "loudness_delta_lu",
+          "threshold": 0.5,
+          "unit": "LU",
+          "value": -0.5129798344292649
+        }
+      ],
+      "message": "Integrated loudness is outside the preferred target tolerance.",
+      "severity": "warning"
+    },
+    {
+      "code": "PHASE_CORRELATION_LOW",
+      "evidence": [
+        {
+          "comparator": ">=",
+          "metric": "phase_correlation",
+          "threshold": 0.2,
+          "unit": "ratio",
+          "value": 0.1518745514601272
+        }
+      ],
+      "message": "Phase correlation is low and may reduce mono compatibility.",
+      "severity": "warning"
+    },
+    {
+      "code": "CODEC_SAFE_MARGIN_OK",
+      "evidence": [
+        {
+          "comparator": "<",
+          "metric": "codec_risk_estimate",
+          "threshold": 0.75,
+          "unit": "score",
+          "value": 0.0028799683002809218
+        }
+      ],
+      "message": "Codec-safety proxy remains within the preferred range.",
+      "severity": "informational"
+    },
+    {
+      "code": "DYNAMICS_PRESERVED_WITHIN_TOLERANCE",
+      "evidence": [
+        {
+          "comparator": ">=",
+          "metric": "crest_factor_db",
+          "threshold": 6.5,
+          "unit": "dB",
+          "value": 6.521601692232451
+        }
+      ],
+      "message": "Crest factor remains within the requested dynamics tolerance.",
+      "severity": "informational"
+    },
+    {
+      "code": "TONAL_BALANCE_WITHIN_EXPECTED_RANGE",
+      "evidence": [
+        {
+          "comparator": "<=",
+          "metric": "low_mid_balance_db",
+          "threshold": 12.0,
+          "unit": "dB",
+          "value": 8.585559768148693
+        },
+        {
+          "comparator": "<=",
+          "metric": "high_mid_balance_db",
+          "threshold": 12.0,
+          "unit": "dB",
+          "value": -2.3294031238179516
+        }
+      ],
+      "message": "Measured tonal balance stays within the expected operating range.",
+      "severity": "informational"
+    },
+    {
+      "code": "TRUE_PEAK_WITHIN_MARGIN",
+      "evidence": [
+        {
+          "comparator": ">=",
+          "metric": "true_peak_margin_db",
+          "threshold": 0.3,
+          "unit": "dB",
+          "value": 9.614348625668224
+        }
+      ],
+      "message": "True peak stays within the requested ceiling margin.",
+      "severity": "informational"
+    }
+  ],
+  "overall_status": "fail",
+  "recipe_schema_version": "recipe_v2",
+  "reference_assessment": null,
+  "requested": {
+    "bass_preservation": 0.9,
+    "brightness": 0.1,
+    "ceiling_dbfs": -1.0,
+    "ceiling_mode": "TRUE_PEAK",
+    "codec_safe_requested": false,
+    "dynamics_preservation": 0.5,
+    "fir_backend": "AUTO",
+    "mode": "STREAMING_SAFE",
+    "reference_path": null,
+    "stereo_width": 1.0,
+    "target_loudness_lufs": -14.0
+  },
+  "schema_version": "report_schema_v4",
+  "summary": [
+    {
+      "category": "loudness",
+      "message": "Reduced integrated loudness by 7.14 LUFS."
+    },
+    {
+      "category": "stereo",
+      "message": "Narrowed sub / low-band stereo width by 0.08 ratio."
+    },
+    {
+      "category": "dynamics",
+      "message": "Preserved punch within the current crest-factor tolerance."
+    },
+    {
+      "category": "safety",
+      "message": "Render failed QC and is not release-ready under the current measured constraints."
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "config": {
+    "bass_preservation": 0.9,
+    "brightness": 0.1,
+    "ceiling_db": -1.0,
+    "ceiling_mode": "TRUE_PEAK",
+    "dynamics_preservation": 0.5,
+    "fir_backend": "AUTO",
+    "mode": "STREAMING_SAFE",
+    "oversampling": 1,
+    "reference_path": null,
+    "stereo_width": 1.0,
+    "target_loudness": -14.0
+  },
+  "derived_targets": {
+    "ceiling_db": -1.0,
+    "reference_targeting": null,
+    "target_crest_factor": 7.5,
+    "target_high_mid_balance": 0.0,
+    "target_loudness": -14.0,
+    "target_low_band_width": 0.09999999999999998,
+    "target_low_energy_ratio": 0.0,
+    "target_low_mid_balance": 0.0,
+    "target_side_energy_ratio": 0.0,
+    "target_sub_energy_ratio": 0.0,
+    "target_tilt": 0.30000000000000004,
+    "target_width": 1.0
+  },
+  "params": {
+    "bass_preservation": 0.8,
+    "brightness": 0.2,
+    "dynamics_preservation": 1.0,
+    "width": 0.9
+  },
+  "render_context": {
+    "makeup_gain_db": -4.36742475591257,
+    "targets": {
+      "ceiling_db": -1.0,
+      "reference_targeting": null,
+      "target_crest_factor": 7.5,
+      "target_high_mid_balance": 0.0,
+      "target_loudness": -14.0,
+      "target_low_band_width": 0.09999999999999998,
+      "target_low_energy_ratio": 0.0,
+      "target_low_mid_balance": 0.0,
+      "target_side_energy_ratio": 0.0,
+      "target_sub_energy_ratio": 0.0,
+      "target_tilt": 0.30000000000000004,
+      "target_width": 1.0
+    },
+    "trim_gain_db": -2.259488114878144
+  },
+  "schema_version": "recipe_v2"
+}
