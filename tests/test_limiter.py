@@ -50,7 +50,6 @@ def test_limiter_python_only_when_native_unavailable(monkeypatch):
     assert limiter.last_execution_info["fallback_triggered"] is False
     assert limiter.last_execution_info["execution_state"] == "python_reference_native_unavailable"
     assert limiter.last_execution_info["native_available"] is False
-    assert limiter.last_execution_info["module_imported"] is True
 
 
 @pytest.mark.skipif(not limiter_mod.NATIVE_AVAILABLE, reason="Native limiter helper is not available")

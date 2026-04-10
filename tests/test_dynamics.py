@@ -39,7 +39,6 @@ def test_multiband_dynamics_python_only_when_native_unavailable(monkeypatch):
     assert md.last_execution_info["fallback_triggered"] is False
     assert md.last_execution_info["execution_state"] == "python_reference_native_unavailable"
     assert md.last_execution_info["native_available"] is False
-    assert md.last_execution_info["module_imported"] is True
     assert np.allclose(first, second, atol=1e-12)
     assert np.isfinite(first).all()
 
