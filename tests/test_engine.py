@@ -5,7 +5,12 @@ import numpy as np
 
 from cognis.config import CeilingMode, MasteringConfig, MasteringMode
 from cognis.engine import Engine
-from cognis.serialization.artifacts import serialize_analysis, serialize_report, write_render_artifacts
+from cognis.serialization.artifacts import (
+    serialize_analysis,
+    serialize_decision_history,
+    serialize_report,
+    write_render_artifacts,
+)
 from cognis.serialization.recipe import serialize_recipe
 
 
@@ -41,7 +46,8 @@ def test_engine_render_emits_first_class_artifacts():
     assert result.output_analysis.schema_version == "analysis_schema_v2"
     assert result.reference_analysis is None
     assert result.targets.reference_targeting is None
-    assert result.report.schema_version == "report_schema_v3"
+    assert result.decision_history is None
+    assert result.report.schema_version == "report_schema_v4"
     assert result.report.findings
 
 
@@ -50,7 +56,7 @@ def test_engine_process_remains_compatible():
     mastered, report, recipe = engine.process(_make_audio(), 48000, _make_config())
 
     assert mastered.shape == _make_audio().shape
-    assert report.schema_version == "report_schema_v3"
+    assert report.schema_version == "report_schema_v4"
     assert recipe["schema_version"] == "recipe_v2"
 
 
@@ -66,6 +72,8 @@ def test_engine_render_is_deterministic_for_same_input():
     assert serialize_recipe(first.recipe) == serialize_recipe(second.recipe)
     assert serialize_analysis(first.output_analysis) == serialize_analysis(second.output_analysis)
     assert serialize_report(first.report) == serialize_report(second.report)
+    assert first.decision_history is None
+    assert second.decision_history is None
 
 
 def test_engine_process_with_different_backends():
@@ -118,6 +126,10 @@ def test_engine_render_with_reference_emits_reference_artifacts():
     assert result.reference_analysis is not None
     assert result.reference_analysis.identity.role == "reference"
     assert result.targets.reference_targeting is not None
+    assert result.decision_history is not None
+    assert result.decision_history.schema_version == "decision_history_schema_v1"
+    assert result.report.decision_history_summary is not None
+    assert result.report.decision_history_summary.available is True
     assert result.report.reference_status in {"constrained", "partial", "matched", "deviated"}
     assert result.report.reference_assessment is not None
     assert result.report.reference_assessment.reference_analysis_schema_version == "analysis_schema_v2"
@@ -141,4 +153,7 @@ def test_engine_render_with_reference_emits_reference_artifacts():
     )
 
     assert "analysis_reference" in written
+    assert "decision_history" in written
     assert Path(written["analysis_reference"]).exists()
+    assert Path(written["decision_history"]).exists()
+    assert serialize_decision_history(result.decision_history)

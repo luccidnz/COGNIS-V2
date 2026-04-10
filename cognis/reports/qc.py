@@ -5,11 +5,12 @@ from typing import Any
 
 from cognis.analysis.features import AnalysisResult
 from cognis.config import CeilingMode, MasteringConfig
+from cognis.optimizer.decision_history import DecisionHistorySummary
 from cognis.optimizer.targets import TargetValues
 from cognis.reports.reference import ReferenceAssessment, build_reference_assessment, render_reference_markdown_section
 
 
-REPORT_SCHEMA_VERSION = "report_schema_v3"
+REPORT_SCHEMA_VERSION = "report_schema_v4"
 
 SEVERITY_PASS = "pass"
 SEVERITY_INFO = "informational"
@@ -103,6 +104,7 @@ class ReportResult:
     summary: tuple[ChangeBullet, ...]
     overall_status: str
     reference_assessment: ReferenceAssessment | None = None
+    decision_history_summary: DecisionHistorySummary | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -535,6 +537,7 @@ def build_report(
     output_analysis: AnalysisResult,
     reference_analysis: AnalysisResult | None = None,
     optimizer_trace: Any | None = None,
+    decision_history_summary: DecisionHistorySummary | None = None,
 ) -> ReportResult:
     requested = _build_requested(config)
     achieved = _build_achieved(output_analysis)
@@ -564,6 +567,7 @@ def build_report(
         summary=summary,
         overall_status=overall_status,
         reference_assessment=reference_assessment,
+        decision_history_summary=decision_history_summary,
     )
 
 
@@ -599,6 +603,27 @@ def render_report_markdown(report: ReportResult) -> str:
     if report.reference_assessment is not None:
         lines.extend([""] + render_reference_markdown_section(report.reference_assessment))
 
+    if report.decision_history_summary is not None:
+        summary = report.decision_history_summary
+        lines.extend(["", "## Optimizer Decision History", ""])
+        if not summary.available:
+            if summary.limitations:
+                lines.append(f"- Decision history unavailable: {summary.limitations[0]}")
+            else:
+                lines.append("- Decision history unavailable.")
+        else:
+            lines.append(f"- Selection basis: `{summary.selection_basis}`")
+            lines.append(f"- Evaluated candidates: `{summary.candidate_count}`")
+            lines.append(f"- Winner candidate index: `{summary.winner_candidate_index}`")
+            if summary.runner_up_candidate_index is not None:
+                lines.append(f"- Runner-up candidate index: `{summary.runner_up_candidate_index}`")
+            if summary.score_margin_to_runner_up is not None:
+                lines.append(f"- Winner score margin to runner-up: `{summary.score_margin_to_runner_up:.4f}`")
+            for tradeoff in summary.dominant_tradeoffs:
+                lines.append(f"- {tradeoff}")
+            for limitation in summary.limitations:
+                lines.append(f"- Limitation: {limitation}")
+
     lines.extend(["", "## QC Findings", ""])
     for finding in report.findings:
         lines.append(f"- `{finding.severity}` `{finding.code}`: {finding.message}")
@@ -618,6 +643,7 @@ def generate_qc_report(
     recipe_schema_version: str = "recipe_v2",
     reference_analysis: AnalysisResult | None = None,
     optimizer_trace: Any | None = None,
+    decision_history_summary: DecisionHistorySummary | None = None,
 ) -> QCReport:
     return build_report(
         config,
@@ -627,6 +653,7 @@ def generate_qc_report(
         output_analysis,
         reference_analysis,
         optimizer_trace=optimizer_trace,
+        decision_history_summary=decision_history_summary,
     )
 
 

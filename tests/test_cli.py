@@ -59,6 +59,7 @@ def test_cli_reference_run_writes_reference_artifacts(monkeypatch):
         artifacts_dir / "master.analysis.input.json",
         artifacts_dir / "master.analysis.output.json",
         artifacts_dir / "master.analysis.reference.json",
+        artifacts_dir / "master.decision_history.json",
         artifacts_dir / "master.report.json",
         artifacts_dir / "master.report.md",
     }
@@ -67,10 +68,17 @@ def test_cli_reference_run_writes_reference_artifacts(monkeypatch):
         assert path.exists()
 
     report_payload = json.loads((artifacts_dir / "master.report.json").read_text(encoding="utf-8"))
-    assert report_payload["schema_version"] == "report_schema_v3"
+    assert report_payload["schema_version"] == "report_schema_v4"
     assert report_payload["reference_assessment"]["outcome"] in {"constrained", "partial", "matched", "deviated"}
     assert report_payload["reference_assessment"]["attribution"]["schema_version"] == "reference_attribution_schema_v1"
     assert report_payload["reference_assessment"]["attribution"]["available"] is True
+    assert report_payload["decision_history_summary"]["schema_version"] == "decision_history_schema_v1"
+    assert report_payload["decision_history_summary"]["available"] is True
+
+    decision_history_payload = json.loads((artifacts_dir / "master.decision_history.json").read_text(encoding="utf-8"))
+    assert decision_history_payload["schema_version"] == "decision_history_schema_v1"
+    assert decision_history_payload["search"]["selection_basis"] == "exact_bounded_grid_search"
+    assert decision_history_payload["selection"]["winner_candidate_index"] is not None
 
     reference_payload = json.loads((artifacts_dir / "master.analysis.reference.json").read_text(encoding="utf-8"))
     assert reference_payload["identity"]["role"] == "reference"
@@ -78,5 +86,6 @@ def test_cli_reference_run_writes_reference_artifacts(monkeypatch):
 
     markdown = (artifacts_dir / "master.report.md").read_text(encoding="utf-8")
     assert "## Reference" in markdown
+    assert "## Optimizer Decision History" in markdown
     assert "## Reference Attribution" in markdown
     assert "## QC Findings" in markdown

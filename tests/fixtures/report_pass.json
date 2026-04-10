@@ -134,6 +134,7 @@
   ],
   "overall_status": "pass",
   "recipe_schema_version": "recipe_v2",
+  "decision_history_summary": null,
   "reference_assessment": null,
   "requested": {
     "bass_preservation": 0.9,
@@ -148,7 +149,7 @@
     "stereo_width": 1.0,
     "target_loudness_lufs": -14.0
   },
-  "schema_version": "report_schema_v3",
+  "schema_version": "report_schema_v4",
   "summary": [
     {
       "category": "loudness",

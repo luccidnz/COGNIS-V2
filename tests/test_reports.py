@@ -489,9 +489,9 @@ def test_reference_report_serialization_includes_reference_assessment():
     report = build_report(config, "recipe_v2", targets, input_analysis, output_analysis, reference_analysis)
     payload = json.loads(serialize_report(report))
 
-    assert report.schema_version == "report_schema_v3"
+    assert report.schema_version == "report_schema_v4"
     assert report.reference_status in {"constrained", "partial", "matched", "deviated"}
-    assert payload["schema_version"] == "report_schema_v3"
+    assert payload["schema_version"] == "report_schema_v4"
     assert payload["reference_assessment"]["schema_version"] == "reference_assessment_schema_v2"
     assert payload["reference_assessment"]["reference_analysis_schema_version"] == "analysis_schema_v2"
     assert payload["reference_assessment"]["outcome"] == report.reference_status

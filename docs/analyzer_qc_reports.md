@@ -9,9 +9,9 @@ COGNIS now emits first-class deterministic artifacts for post-render inspection.
   - Contains versioned identity metadata plus loudness, tonal, stereo, and safety/risk summaries.
   - Identity includes role/source metadata so input, output, and reference artifacts remain distinct.
 
-- `report_schema_v3`
+- `report_schema_v4`
   - Produced by `cognis.reports.qc.build_report()` / `generate_qc_report()`.
-  - Captures requested settings, achieved outcome, target deltas, QC findings, a nested reference assessment, and concise human-readable change bullets.
+  - Captures requested settings, achieved outcome, target deltas, QC findings, a nested reference assessment, a compact decision-history summary, and concise human-readable change bullets.
 
 - `recipe_v2`
   - Captures render configuration, chosen DSP parameters, and the derived target values / gain staging context used for the render.
@@ -20,7 +20,11 @@ COGNIS now emits first-class deterministic artifacts for post-render inspection.
 - `reference_assessment_schema_v2`
   - Captures input-vs-reference and output-vs-reference comparison metrics plus reference-aware findings and summary bullets.
   - Includes a nested `reference_attribution_schema_v1` payload when a reference-targeting plan is available.
-  - Attribution entries are explicitly labeled `exact`, `inferred`, `heuristic`, or `unavailable` so the report never fakes causality.
+  - Attribution entries are explicitly labeled `exact`, `inferred`, or `unavailable` so the report never fakes causality.
+
+- `decision_history_schema_v1`
+  - Produced for reference-aware runs from the bounded-grid optimizer trace.
+  - Captures evaluated candidates, winner/runner-up ordering, exact pairwise penalty deltas, metric-specific tradeoffs, and explicit bounded-search limitations.
 
 ## Canonical render flow
 
@@ -54,6 +58,7 @@ That writes:
 - `output.analysis.input.json`
 - `output.analysis.output.json`
 - `output.analysis.reference.json` when a reference is supplied
+- `output.decision_history.json` for reference-aware runs
 - `output.wav.report.json`
 - `output.wav.report.md` when `--write-markdown-report` is supplied
 
@@ -101,15 +106,14 @@ Still intentionally proxy-based in `v1`:
 Attribution guidance is intentionally conservative:
 
 - `exact` means the report can point to a direct measured blocker or constraint threshold
-- `inferred` means the report can link the outcome to target-plan logic, but not to a step-by-step optimizer trace
-- `heuristic` is reserved for future report-only narratives when exact target or trace evidence is unavailable
+- `inferred` means the report can link the outcome to target-plan logic or winner-vs-alternative evidence, but the prose remains an interpretation of exact numbers
 - `unavailable` means no honest causal explanation was available for that case
 
-Those fields are explicit heuristics derived from measured evidence, not hidden model scores.
+Those fields are explicit bounded explanations derived from measured evidence, not hidden model scores.
 
 ## Versioning expectations
 
-- `analysis_schema_v2`, `report_schema_v3`, `recipe_v2`, and `reference_assessment_schema_v2` are explicit compatibility markers.
+- `analysis_schema_v2`, `report_schema_v4`, `recipe_v2`, `reference_assessment_schema_v2`, and `decision_history_schema_v1` are explicit compatibility markers.
 - Add a new schema version when field names, payload meaning, or artifact structure changes incompatibly.
 - Additive fields that preserve existing semantics can stay within the current version, but the tests and golden fixtures should be updated in the same change.
 - The current contract is artifact-first and engine-first; future UI layers should consume these artifacts rather than inventing a separate payload.

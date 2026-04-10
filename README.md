@@ -105,16 +105,18 @@ The canonical CLI render path now writes deterministic artifacts alongside the m
 - `output.analysis.input.json`
 - `output.analysis.output.json`
 - `output.analysis.reference.json` when `--reference` is supplied
+- `output.decision_history.json` for reference-aware runs
 - `output.report.json`
 - `output.report.md` when markdown output is requested
 
 ## Analyzer / QC / Report Artifacts
 
-The render pipeline now exposes four versioned artifacts:
+The render pipeline now exposes five versioned artifacts:
 - `analysis_schema_v2`: structured post-render analysis including loudness, tonal balance, stereo, and delivery-risk proxies, plus deterministic role/source metadata.
-- `report_schema_v3`: requested-vs-achieved deltas, QC findings, reference assessment, and concise "what changed" bullets.
+- `report_schema_v4`: requested-vs-achieved deltas, QC findings, reference assessment, a compact decision-history summary, and concise "what changed" bullets.
 - `recipe_v2`: chosen DSP parameters plus the derived target values, reference-aware targeting, and gain staging context used for the render.
 - `reference_assessment_schema_v2`: nested input-vs-reference and output-vs-reference comparisons with constraint-aware attribution.
+- `decision_history_schema_v1`: bounded-grid optimizer evidence including evaluated candidates, winner vs runner-up separation, closer-reference alternatives, and explicit limitations on what the search did not record.
 
 QC findings are intentionally severity-based rather than boolean-only:
 - `pass`: no blocking issue detected under the current checks
@@ -125,7 +127,13 @@ QC findings are intentionally severity-based rather than boolean-only:
 Reference-aware renders keep safety and reference comparison separate:
 - the top-level QC findings still describe release safety and target misses
 - the nested reference assessment explains how the render differs from the reference and where safety limits remained in effect
+- the decision-history artifact explains how the bounded optimizer chose the winning candidate, what it beat, and where the evidence stops
 - the report language is grounded in measured loudness, tilt, width, crest-factor, and phase-correlation deltas
+
+Decision history is intentionally bounded:
+- it covers the exact candidates evaluated in the deterministic grid search
+- it does not claim a continuous optimizer path
+- it does not claim a global optimum outside the evaluated grid
 
 See [docs/analyzer_qc_reporting.md](docs/analyzer_qc_reporting.md) for schema and usage details.
 

@@ -12,6 +12,11 @@ from cognis.dsp.dynamics import MultibandDynamics
 from cognis.dsp.eq import EQ
 from cognis.dsp.limiter import Limiter
 from cognis.dsp.stereo import StereoControl
+from cognis.optimizer.decision_history import (
+    DecisionHistoryArtifact,
+    DecisionHistorySummary,
+    build_decision_history_artifact,
+)
 from cognis.optimizer.search import SearchTrace, grid_search_with_trace
 from cognis.optimizer.targets import TargetValues, build_targets
 from cognis.reports.qc import ReportResult, build_report
@@ -29,6 +34,7 @@ class RenderResult:
     reference_analysis: AnalysisResult | None
     targets: TargetValues
     optimizer_trace: SearchTrace | None
+    decision_history: DecisionHistoryArtifact | None
     report: ReportResult
 
     @property
@@ -159,6 +165,11 @@ class Engine:
             return self._render_chain(aud, sr, params, config, trim_gain_db, makeup_gain_db)
 
         optimizer_trace = grid_search_with_trace(audio, sr, targets, render_fn, self.analyzer)
+        decision_history = None
+        decision_history_summary: DecisionHistorySummary | None = None
+        if reference_analysis is not None:
+            decision_history = build_decision_history_artifact(optimizer_trace, targets)
+            decision_history_summary = decision_history.to_summary()
         best_params = optimizer_trace.best_params
         mastered_audio = self._render_chain(audio, sr, best_params, config, trim_gain_db, makeup_gain_db)
         output_analysis = self.analyzer.analyze(mastered_audio, sr, role="output")
@@ -171,6 +182,7 @@ class Engine:
             output_analysis,
             reference_analysis=reference_analysis,
             optimizer_trace=optimizer_trace,
+            decision_history_summary=decision_history_summary,
         )
 
         return RenderResult(
@@ -181,6 +193,7 @@ class Engine:
             reference_analysis=reference_analysis,
             targets=targets,
             optimizer_trace=optimizer_trace,
+            decision_history=decision_history,
             report=report,
         )
 

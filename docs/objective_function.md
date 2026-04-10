@@ -21,5 +21,7 @@ The function explicitly separates hard constraints (which are heavily penalized 
 ## Attribution Hooks
 - `compute_objective()` stays as the scalar contract.
 - `build_objective_attribution()` returns the exact per-term score breakdown for a candidate.
-- `grid_search_with_trace()` returns the deterministic winner trace and score margin without changing `grid_search()`.
-- Any knob-level narrative outside these exact terms is intentionally left to downstream reporting and should be treated as derived or heuristic.
+- `grid_search_with_trace()` returns the deterministic bounded-grid trace, including ranked candidate indexes, runner-up identity, and tie metadata, without changing `grid_search()`.
+- `decision_history_schema_v1` is built from those exact evaluated candidates plus their per-term objective attribution.
+- Winner-vs-runner-up and winner-vs-alternative summaries are bounded to evaluated grid points only; they do not imply a continuous optimizer path or a global optimum outside the recorded grid.
+- Any knob-level narrative outside these exact terms should be labeled `inferred` or `unavailable`, never presented as exact search evidence.

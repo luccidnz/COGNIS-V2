@@ -237,10 +237,13 @@ def test_grid_search_with_trace_matches_scalar_search_and_reports_margin():
     trace = grid_search_with_trace(audio, 48000, targets, dummy_render, analyzer)
     best_params = grid_search(audio, 48000, targets, dummy_render, analyzer)
 
-    assert trace.schema_version == "objective_search_trace_v1"
+    assert trace.schema_version == "objective_search_trace_v2"
     assert trace.selection_basis == "exact_bounded_grid_search"
     assert trace.candidate_count == 36
+    assert trace.ranking_rule == "sort_by_score_then_index"
+    assert trace.ranked_candidate_indexes[0] == trace.best_index
     assert trace.best_params == best_params
     assert trace.best_score == min(item.score for item in trace.evaluations)
+    assert trace.tie_count_at_best_score >= 1
     assert trace.score_margin_to_next is None or trace.score_margin_to_next >= 0.0
     assert trace.evaluations[trace.best_index].params == trace.best_params

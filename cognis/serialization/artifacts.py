@@ -32,6 +32,10 @@ def serialize_report(report: Any) -> str:
     return json.dumps(_normalize(report), indent=2, sort_keys=True) + "\n"
 
 
+def serialize_decision_history(decision_history: Any) -> str:
+    return json.dumps(_normalize(decision_history), indent=2, sort_keys=True) + "\n"
+
+
 def serialize_analysis_artifact(artifact: Any) -> str:
     return json.dumps(_normalize(artifact), indent=2, sort_keys=True) + "\n"
 
@@ -108,6 +112,12 @@ def write_render_artifacts(
         report_path = artifact_root / f"{stem}.report.json"
         report_path.write_text(serialize_report(render_result.report), encoding="utf-8")
         written["report"] = str(report_path)
+
+    decision_history = getattr(render_result, "decision_history", None)
+    if decision_history is not None:
+        decision_history_path = artifact_root / f"{stem}.decision_history.json"
+        decision_history_path.write_text(serialize_decision_history(decision_history), encoding="utf-8")
+        written["decision_history"] = str(decision_history_path)
 
     if write_markdown_report:
         markdown_path = artifact_root / f"{stem}.report.md"
