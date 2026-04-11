@@ -4,7 +4,7 @@
     {
       "index": 1,
       "objective_attribution": {
-        "dominant_penalty": 2.0,
+        "dominant_penalty": 1.0,
         "dominant_term": "true_peak_ceiling",
         "reference_basis": "derived",
         "reference_constraints": [],
@@ -19,7 +19,7 @@
             "difference": 0.0,
             "name": "true_peak_ceiling",
             "note": "test term",
-            "penalty": 2.0,
+            "penalty": 1.0,
             "target_value": 0.0,
             "value": 0.0,
             "weight": 1.0
@@ -37,7 +37,7 @@
             "weight": 1.0
           }
         ],
-        "total_score": 3.0
+        "total_score": 2.0
       },
       "params": {
         "bass_preservation": 1.0,
@@ -46,7 +46,7 @@
         "width": 1.0
       },
       "rank": 2,
-      "score": 3.0
+      "score": 2.0
     },
     {
       "index": 2,
@@ -151,7 +151,7 @@
     {
       "index": 1,
       "objective_attribution": {
-        "dominant_penalty": 2.0,
+        "dominant_penalty": 1.0,
         "dominant_term": "true_peak_ceiling",
         "reference_basis": "derived",
         "reference_constraints": [],
@@ -166,7 +166,7 @@
             "difference": 0.0,
             "name": "true_peak_ceiling",
             "note": "test term",
-            "penalty": 2.0,
+            "penalty": 1.0,
             "target_value": 0.0,
             "value": 0.0,
             "weight": 1.0
@@ -184,7 +184,7 @@
             "weight": 1.0
           }
         ],
-        "total_score": 3.0
+        "total_score": 2.0
       },
       "params": {
         "bass_preservation": 1.0,
@@ -193,7 +193,7 @@
         "width": 1.0
       },
       "rank": 2,
-      "score": 3.0
+      "score": 2.0
     },
     {
       "index": 2,
@@ -377,7 +377,7 @@
   "runner_up": {
     "index": 1,
     "objective_attribution": {
-      "dominant_penalty": 2.0,
+      "dominant_penalty": 1.0,
       "dominant_term": "true_peak_ceiling",
       "reference_basis": "derived",
       "reference_constraints": [],
@@ -392,7 +392,7 @@
           "difference": 0.0,
           "name": "true_peak_ceiling",
           "note": "test term",
-          "penalty": 2.0,
+          "penalty": 1.0,
           "target_value": 0.0,
           "value": 0.0,
           "weight": 1.0
@@ -410,7 +410,7 @@
           "weight": 1.0
         }
       ],
-      "total_score": 3.0
+      "total_score": 2.0
     },
     "params": {
       "bass_preservation": 1.0,
@@ -419,7 +419,7 @@
       "width": 1.0
     },
     "rank": 2,
-    "score": 3.0
+    "score": 2.0
   },
   "schema_version": "decision_history_schema_v1",
   "search": {
@@ -455,9 +455,9 @@
   },
   "selection": {
     "runner_up_candidate_index": 1,
-    "runner_up_score": 3.0,
-    "score_margin_to_runner_up": 1.0,
-    "tie_count_at_best_score": 1,
+    "runner_up_score": 2.0,
+    "score_margin_to_runner_up": 0.0,
+    "tie_count_at_best_score": 2,
     "winner_candidate_index": 0,
     "winner_score": 2.0
   },
@@ -465,13 +465,13 @@
     {
       "candidate_index": 1,
       "comparison_basis": "winner_vs_runner_up",
-      "score_delta_vs_winner": 1.0,
+      "score_delta_vs_winner": 0.0,
       "separation_terms": [
         {
-          "alternative_penalty": 2.0,
+          "alternative_penalty": 1.0,
           "category": "hard_constraint",
           "evidence_level": "exact",
-          "penalty_delta": 2.0,
+          "penalty_delta": 1.0,
           "term": "true_peak_ceiling",
           "winner_penalty": 0.0
         }

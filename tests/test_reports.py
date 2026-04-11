@@ -583,3 +583,36 @@ def test_reference_report_uses_unavailable_label_when_no_supported_tradeoff_exis
     labels = [entry["attribution_level"] for entry in payload["reference_assessment"]["attribution"]["entries"]]
     assert "exact" in labels
     assert "unavailable" in labels
+
+def test_report_includes_tie_heavy_wording():
+    from cognis.optimizer.decision_history import DecisionHistorySummary
+    from cognis.optimizer.targets import TargetValues
+    report = build_report(
+        _config(),
+        "recipe_v2",
+        TargetValues(
+            target_loudness=-14.0,
+            ceiling_db=-1.0,
+            target_tilt=0.0,
+            target_width=1.0,
+            target_crest_factor=9.0,
+            target_low_band_width=0.2,
+        ),
+        _analysis(),
+        _analysis(),
+        decision_history_summary=DecisionHistorySummary(
+            schema_version="v1",
+            available=True,
+            selection_basis="exact_bounded_grid_search",
+            candidate_count=10,
+            winner_candidate_index=2,
+            runner_up_candidate_index=3,
+            score_margin_to_runner_up=0.0,
+            tie_count_at_best_score=2,
+            dominant_tradeoffs=("Tradeoff A", "Tradeoff B"),
+            limitations=("Limitation C",),
+        ),
+    )
+    markdown = render_report_markdown(report)
+    assert "## Optimizer Decision History" in markdown
+    assert "Multiple candidates tied at the best evaluated score; winner selected deterministically by candidate index." in markdown
