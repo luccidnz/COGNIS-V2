@@ -137,6 +137,21 @@ Decision history is intentionally bounded:
 
 See [docs/analyzer_qc_reporting.md](docs/analyzer_qc_reporting.md) for schema and usage details.
 
+## Batch Evaluation + Dogfood Lab
+
+Run a deterministic multi-render mastering session from a JSON manifest:
+```bash
+python -m cognis.cli batch dogfood.manifest.json --output-root build/dogfood/session-01
+```
+
+The batch lab writes per-run mastered audio and the existing sibling artifacts under `runs/`, plus:
+- `session.json`: versioned aggregate session artifact
+- `session.md`: human-readable aggregate summary and objective shortlist
+
+The shortlist ranks measured safety, target closeness, reference residuals, and review priority only. It does not make subjective listening-quality claims, and each per-run QC report remains the source of truth for release safety.
+
+See [docs/batch_lab.md](docs/batch_lab.md) for the manifest schema, output layout, mixed-failure behavior, and examples.
+
 ## Known Limitations
 - The BS.1770 loudness measurement is an approximation and not yet fully certification-grade.
 - The limiter is an envelope-aware quasi-lookahead limiter. While better than a static waveshaper, it is not yet a multi-stage true lookahead limiter.

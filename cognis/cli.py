@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import argparse
+import sys
 
+from cognis.batch import main as batch_main
 from cognis.config import CeilingMode, MasteringConfig, MasteringMode
 from cognis.engine import Engine
 from cognis.io.audio import load_audio, save_audio
@@ -9,6 +11,10 @@ from cognis.serialization.artifacts import write_render_artifacts
 
 
 def main() -> None:
+    if len(sys.argv) > 1 and sys.argv[1] == "batch":
+        batch_main(sys.argv[2:])
+        return
+
     parser = argparse.ArgumentParser(description="COGNIS Mastering Engine CLI")
     parser.add_argument("input", help="Input audio file")
     parser.add_argument("output", help="Output audio file")
