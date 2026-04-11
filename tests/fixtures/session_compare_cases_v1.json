@@ -1,0 +1,88 @@
+{
+  "schema_version": "cognis_session_comparison_fixture_v1",
+  "description": "Compact fixture cases for cross-version batch session comparison tests and documentation.",
+  "cases": {
+    "objective_improvement": {
+      "baseline": {
+        "run_id": "closer_to_target",
+        "qc_status": "warning",
+        "abs_loudness_delta_lu": 0.42,
+        "true_peak_margin_db": 0.12,
+        "warning_count": 1,
+        "fail_count": 0
+      },
+      "candidate": {
+        "run_id": "closer_to_target",
+        "qc_status": "pass",
+        "abs_loudness_delta_lu": 0.08,
+        "true_peak_margin_db": 0.38,
+        "warning_count": 0,
+        "fail_count": 0
+      },
+      "expected": "improved"
+    },
+    "objective_regression": {
+      "baseline": {
+        "run_id": "qc_regression",
+        "qc_status": "pass",
+        "abs_loudness_delta_lu": 0.06,
+        "true_peak_margin_db": 0.45,
+        "warning_count": 0,
+        "fail_count": 0
+      },
+      "candidate": {
+        "run_id": "qc_regression",
+        "qc_status": "fail",
+        "abs_loudness_delta_lu": 0.21,
+        "true_peak_margin_db": -0.04,
+        "warning_count": 1,
+        "fail_count": 1
+      },
+      "expected": "regressed"
+    },
+    "mixed_inconclusive": {
+      "baseline": {
+        "run_id": "mixed_tradeoff",
+        "qc_status": "pass",
+        "abs_loudness_delta_lu": 0.4,
+        "true_peak_margin_db": 0.5,
+        "reference_available": true,
+        "reference_average_normalized_residual": 0.7
+      },
+      "candidate": {
+        "run_id": "mixed_tradeoff",
+        "qc_status": "pass",
+        "abs_loudness_delta_lu": 0.1,
+        "true_peak_margin_db": 0.1,
+        "reference_available": true,
+        "reference_average_normalized_residual": 0.7
+      },
+      "expected": "inconclusive"
+    },
+    "missing_run": {
+      "baseline": {
+        "run_id": "removed_from_candidate",
+        "presence": "present"
+      },
+      "candidate": null,
+      "expected": "regressed"
+    },
+    "reference_aware": {
+      "baseline": {
+        "run_id": "reference_match",
+        "reference_available": true,
+        "reference_status": "partial",
+        "reference_average_normalized_residual": 0.82,
+        "reference_matched_metric_count": 1
+      },
+      "candidate": {
+        "run_id": "reference_match",
+        "reference_available": true,
+        "reference_status": "matched",
+        "reference_average_normalized_residual": 0.19,
+        "reference_matched_metric_count": 3
+      },
+      "expected": "improved"
+    }
+  }
+}

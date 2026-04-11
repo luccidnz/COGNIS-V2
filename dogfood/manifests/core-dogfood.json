@@ -1,0 +1,44 @@
+{
+  "schema_version": "cognis_batch_manifest_v1",
+  "corpus": {
+    "schema_version": "cognis_dogfood_corpus_v1",
+    "id": "core_dogfood",
+    "name": "Core Dogfood Corpus",
+    "version": 1,
+    "description": "Small mixed-material corpus for repeated engine-version evaluation.",
+    "asset_policy": "external_or_local",
+    "asset_root": "../../local-corpora/core-dogfood",
+    "tags": ["dogfood", "regression", "mixed-material", "corpus:core"]
+  },
+  "session": {
+    "id": "core-dogfood",
+    "output_root": "../../build/dogfood/core-dogfood"
+  },
+  "defaults": {
+    "modes": ["STREAMING_SAFE"],
+    "options": {
+      "target_loudness": -14.0,
+      "ceiling_db": -1.0,
+      "ceiling_mode": "TRUE_PEAK",
+      "fir_backend": "AUTO"
+    },
+    "tags": ["corpus:core", "delivery:streaming"]
+  },
+  "tracks": [
+    {
+      "id": "dense_pop_mix_01",
+      "path": "premasters/dense-pop-01.wav",
+      "references": [{"id": "commercial_ref", "path": "references/dense-pop-01-ref.wav"}],
+      "include_unreferenced": true,
+      "tags": ["genre:pop", "reference-based", "stress:limiter", "stress:true-peak"],
+      "notes": "Placeholder path for a dense limiter-stress premaster. Audio is intentionally external."
+    },
+    {
+      "id": "wide_electronic_01",
+      "path": "premasters/wide-electronic-01.wav",
+      "include_unreferenced": true,
+      "tags": ["genre:electronic", "non-reference", "stress:stereo-width", "stress:codec-risk"],
+      "notes": "Placeholder path for stereo-width and codec-risk dogfooding."
+    }
+  ]
+}

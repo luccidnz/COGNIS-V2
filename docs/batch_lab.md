@@ -16,6 +16,18 @@ Equivalent module entry point:
 python -m cognis.batch dogfood.manifest.json --output-root build/dogfood/session-01
 ```
 
+Compare two completed sessions:
+
+```bash
+python -m cognis.cli batch compare build/dogfood/session-01/session.json build/dogfood/session-02/session.json --output-root build/dogfood/comparisons/session-01-vs-session-02
+```
+
+Equivalent module entry point:
+
+```bash
+python -m cognis.batch compare build/dogfood/session-01/session.json build/dogfood/session-02/session.json --output-root build/dogfood/comparisons/session-01-vs-session-02
+```
+
 Outputs:
 
 ```text
@@ -44,6 +56,25 @@ build/dogfood/session-01/
 ## Manifest Schema
 
 Schema version: `cognis_batch_manifest_v1`
+
+Curated dogfood corpora use the same executable batch manifest format with an optional top-level corpus block:
+
+```json
+{
+  "schema_version": "cognis_batch_manifest_v1",
+  "corpus": {
+    "schema_version": "cognis_dogfood_corpus_v1",
+    "id": "core_dogfood",
+    "name": "Core Dogfood Corpus",
+    "version": 1,
+    "asset_policy": "external_or_local",
+    "asset_root": "../../local-corpora/core-dogfood",
+    "tags": ["dogfood", "regression", "corpus:core"]
+  }
+}
+```
+
+Audio is not expected to live in git. Put real premaster/reference files under ignored local folders, an external drive, a mounted dataset, or CI-provided paths. If `corpus.asset_root` is set, relative track and reference paths resolve from that root; otherwise they resolve relative to the manifest file.
 
 Minimal explicit-run manifest:
 
@@ -121,6 +152,16 @@ Supported options map directly to `MasteringConfig`:
 
 Paths are resolved relative to the manifest file unless absolute.
 
+If `corpus.asset_root` is present, relative audio and reference paths are resolved from that root instead.
+
+Recommended flat tag namespaces:
+
+- `genre:pop`, `genre:rock`, `genre:hiphop`, `genre:electronic`, `genre:acoustic`, `genre:spoken-word`
+- `delivery:streaming`, `delivery:club`, `delivery:broadcast`, `delivery:archive`
+- `reference-based`, `non-reference`
+- `stress:limiter`, `stress:true-peak`, `stress:low-end`, `stress:stereo-width`, `stress:mono`, `stress:tonal-balance`, `stress:dynamics`, `stress:codec-risk`
+- `corpus:core`, `corpus:nightly`, `corpus:release-gate`
+
 ## Session Artifact
 
 Schema version: `cognis_batch_session_v1`
@@ -128,6 +169,7 @@ Schema version: `cognis_batch_session_v1`
 The machine-readable session artifact is written to `session.json`. It contains:
 
 - manifest and session schema versions
+- optional corpus metadata copied from the manifest
 - stable `session_id`
 - run list in manifest order
 - per-run identities, tags, notes, input/reference paths
@@ -217,6 +259,56 @@ Run states currently used:
 - `failed`: the run raised before a complete per-run artifact set could be produced
 
 QC `fail` is not the same as an orchestration failure. A render can complete successfully and still have `qc.overall_status == "fail"` in its measured report.
+
+## Session Comparison
+
+Schema version: `cognis_session_comparison_v1`
+
+The comparison layer reads two generated `session.json` artifacts and writes:
+
+```text
+comparison_root/
+  comparison.json
+  comparison.md
+  linked_sessions/
+    baseline_session.json
+    candidate_session.json
+```
+
+The comparison is artifact-first. It does not open audio and does not require per-run artifacts beyond the session summaries.
+
+At minimum it compares:
+
+- run presence and absence
+- run success/failure state
+- QC status severity
+- warning and fail counts
+- absolute loudness target delta
+- true-peak margin
+- reference outcome and normalized residual when both runs have reference assessment
+- objective shortlist membership/rank movement as review-order evidence only
+
+Output classifications are:
+
+- `improved`: objective measured signals improved without competing objective regressions
+- `regressed`: objective measured signals got worse, or a baseline run is missing from the candidate
+- `unchanged`: comparable measured signals stayed within deterministic thresholds
+- `inconclusive`: artifacts are missing, mixed, or not comparable enough for a clean rule-based result
+
+The comparison report helps prioritize listening and inspection:
+
+- regressions first
+- inconclusive or missing data next
+- objective improvements after that
+- unchanged runs last
+
+It does not claim that a run is better sounding. Reference closeness means measured residuals moved closer under the reference assessment schema, not a subjective preference verdict.
+
+Use `--fail-on-regression` when you want comparison to return exit code `2` if objective regressions are present:
+
+```bash
+python -m cognis.cli batch compare baseline/session.json candidate/session.json --output-root build/dogfood/comparisons/baseline-vs-candidate --fail-on-regression
+```
 
 ## Compatibility
 

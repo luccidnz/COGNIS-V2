@@ -12,10 +12,12 @@ from cognis.config import CeilingMode, MasteringConfig, MasteringMode
 from cognis.engine import Engine, RenderResult
 from cognis.io.audio import load_audio, save_audio
 from cognis.serialization.artifacts import write_render_artifacts
+from cognis.session_compare import compare_session_files
 
 
 BATCH_MANIFEST_SCHEMA_VERSION = "cognis_batch_manifest_v1"
 BATCH_SESSION_SCHEMA_VERSION = "cognis_batch_session_v1"
+DOGFOOD_CORPUS_SCHEMA_VERSION = "cognis_dogfood_corpus_v1"
 
 RUN_STATE_SUCCESS = "success"
 RUN_STATE_FAILED = "failed"
@@ -114,6 +116,16 @@ def _resolve_manifest_path(base_dir: Path, value: str) -> str:
     return str((base_dir / path).resolve())
 
 
+def _asset_base_dir(manifest: dict[str, Any], manifest_dir: str | Path) -> Path:
+    base_dir = Path(manifest_dir)
+    corpus = manifest.get("corpus")
+    asset_root = corpus.get("asset_root") if isinstance(corpus, dict) else None
+    if not asset_root:
+        return base_dir
+    root = Path(str(asset_root))
+    return root if root.is_absolute() else (base_dir / root).resolve()
+
+
 def load_batch_manifest(path: str | Path) -> dict[str, Any]:
     manifest_path = Path(path)
     payload = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -128,7 +140,7 @@ def load_batch_manifest(path: str | Path) -> dict[str, Any]:
 
 
 def expand_manifest(manifest: dict[str, Any], *, manifest_dir: str | Path = ".") -> list[BatchRunPlan]:
-    base_dir = Path(manifest_dir)
+    base_dir = _asset_base_dir(manifest, manifest_dir)
     defaults = manifest.get("defaults", {})
     default_modes = [str(mode).upper() for mode in _as_list(defaults.get("modes") or defaults.get("mode"), default=["STREAMING_SAFE"])]
     plans: list[BatchRunPlan] = []
@@ -407,6 +419,7 @@ def build_session_artifact(manifest: dict[str, Any], run_summaries: list[dict[st
     return {
         "schema_version": BATCH_SESSION_SCHEMA_VERSION,
         "manifest_schema_version": manifest.get("schema_version", BATCH_MANIFEST_SCHEMA_VERSION),
+        "corpus": _corpus_summary(manifest.get("corpus")),
         "session_id": session_id,
         "manifest_path": str(manifest_path.resolve()) if manifest_path else None,
         "session_root": str(session_root.resolve()),
@@ -414,6 +427,21 @@ def build_session_artifact(manifest: dict[str, Any], run_summaries: list[dict[st
         "runs": run_summaries,
         "aggregate": aggregate,
         "shortlist": build_shortlist(run_summaries),
+    }
+
+
+def _corpus_summary(corpus: Any) -> dict[str, Any] | None:
+    if not isinstance(corpus, dict):
+        return None
+    return {
+        "schema_version": corpus.get("schema_version", DOGFOOD_CORPUS_SCHEMA_VERSION),
+        "id": corpus.get("id"),
+        "name": corpus.get("name"),
+        "version": corpus.get("version"),
+        "description": corpus.get("description"),
+        "asset_policy": corpus.get("asset_policy", "external_or_local"),
+        "asset_root": corpus.get("asset_root"),
+        "tags": list(corpus.get("tags", [])) if isinstance(corpus.get("tags", []), list) else [],
     }
 
 
@@ -640,6 +668,11 @@ def execute_run(plan: BatchRunPlan, *, engine: Engine, output_path: Path, run_di
 
 
 def main(argv: list[str] | None = None) -> None:
+    argv = list(argv or [])
+    if argv and argv[0] == "compare":
+        compare_main(argv[1:])
+        return
+
     parser = argparse.ArgumentParser(description="COGNIS Batch Evaluation + Dogfood Mastering Lab")
     parser.add_argument("manifest", help="Path to a JSON batch manifest")
     parser.add_argument("--output-root", default=None, help="Session output directory")
@@ -651,6 +684,36 @@ def main(argv: list[str] | None = None) -> None:
     print(f"Runs: {session['run_count']} success={session['aggregate']['successful_run_count']} failed={session['aggregate']['failed_run_count']}")
     print(f"Session JSON: {Path(session['session_root']) / 'session.json'}")
     print(f"Session Markdown: {Path(session['session_root']) / 'session.md'}")
+
+
+def compare_main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(description="Compare two COGNIS batch session artifacts")
+    parser.add_argument("baseline_session", help="Baseline session.json")
+    parser.add_argument("candidate_session", help="Candidate session.json")
+    parser.add_argument("--output-root", required=True, help="Comparison output directory")
+    parser.add_argument("--no-linked-sessions", action="store_true", help="Do not copy source session JSON files into linked_sessions/")
+    parser.add_argument("--fail-on-regression", action="store_true", help="Exit non-zero when objective regressions are present")
+    args = parser.parse_args(argv)
+
+    comparison = compare_session_files(
+        args.baseline_session,
+        args.candidate_session,
+        output_root=args.output_root,
+        copy_sessions=not args.no_linked_sessions,
+    )
+    print(f"Comparison complete: {Path(args.output_root).resolve()}")
+    aggregate = comparison["aggregate"]
+    print(
+        "Runs: "
+        f"improved={aggregate['improved_run_count']} "
+        f"regressed={aggregate['regressed_run_count']} "
+        f"unchanged={aggregate['unchanged_run_count']} "
+        f"inconclusive={aggregate['inconclusive_run_count']}"
+    )
+    print(f"Comparison JSON: {Path(args.output_root) / 'comparison.json'}")
+    print(f"Comparison Markdown: {Path(args.output_root) / 'comparison.md'}")
+    if args.fail_on_regression and aggregate["regressed_run_count"]:
+        raise SystemExit(2)
 
 
 if __name__ == "__main__":

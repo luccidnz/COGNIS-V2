@@ -6,6 +6,9 @@ __pycache__/
 .pytest_cache/
 *.py[cod]
 pytest-cache-files-*/
+pytest-*-temp/
+.pytest-*-temp/
+tmpzbphzcvt/
 .DS_Store
 *.log
 .env*
@@ -20,3 +23,7 @@ pytest-cache-files-*/
 build-native/
 cpp/build/
 .tmp/
+
+# Local dogfood corpora and generated evaluation packs
+local-corpora/**
+!local-corpora/.gitkeep

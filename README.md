@@ -150,7 +150,21 @@ The batch lab writes per-run mastered audio and the existing sibling artifacts u
 
 The shortlist ranks measured safety, target closeness, reference residuals, and review priority only. It does not make subjective listening-quality claims, and each per-run QC report remains the source of truth for release safety.
 
-See [docs/batch_lab.md](docs/batch_lab.md) for the manifest schema, output layout, mixed-failure behavior, and examples.
+Curated dogfood corpora live as normal batch manifests with optional corpus metadata under `dogfood/manifests/`. Audio is intentionally external or local, not committed to git.
+
+Compare two completed sessions across engine versions:
+```bash
+python -m cognis.cli batch compare build/dogfood/session-main/session.json build/dogfood/session-candidate/session.json --output-root build/dogfood/comparisons/main-vs-candidate
+```
+
+The comparison writes:
+- `comparison.json`: versioned objective comparison artifact
+- `comparison.md`: human-readable regression/improvement/inconclusive summary
+- `linked_sessions/`: copied baseline and candidate session JSON files
+
+Comparison is based on generated session artifacts only. It can identify objective QC regressions, target/reference closeness changes, missing runs, and inconclusive cases, but it does not claim subjective listening quality.
+
+See [docs/batch_lab.md](docs/batch_lab.md) for the manifest schema, corpus conventions, comparison schema, output layout, mixed-failure behavior, and examples.
 
 ## Known Limitations
 - The BS.1770 loudness measurement is an approximation and not yet fully certification-grade.

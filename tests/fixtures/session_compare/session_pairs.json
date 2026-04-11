@@ -1,0 +1,406 @@
+{
+  "improvement": {
+    "baseline": {
+      "schema_version": "cognis_batch_session_v1",
+      "session_id": "baseline-improvement",
+      "session_root": "fixtures/baseline-improvement",
+      "run_count": 1,
+      "runs": [
+        {
+          "run_id": "song_alpha",
+          "track_id": "song_alpha",
+          "state": "success",
+          "mode": "STREAMING_SAFE",
+          "input_path": "corpus/song-alpha.wav",
+          "reference_path": null,
+          "tags": ["dogfood"],
+          "notes": null,
+          "output": {"run_dir": "runs/song_alpha", "audio": "runs/song_alpha/output.wav", "artifacts": {}},
+          "qc": {
+            "overall_status": "warning",
+            "warning_count": 1,
+            "fail_count": 0,
+            "warning_codes": ["TRUE_PEAK_TOO_CLOSE_TO_CEILING"],
+            "fail_codes": []
+          },
+          "metrics": {
+            "integrated_lufs": -14.42,
+            "true_peak_dbfs": -1.15,
+            "target_loudness_lufs": -14.0,
+            "loudness_delta_lu": -0.42,
+            "abs_loudness_delta_lu": 0.42,
+            "true_peak_margin_db": 0.15,
+            "limiter_stress_estimate": 0.3,
+            "codec_risk_estimate": 0.2,
+            "clipping_risk_estimate": 0.0
+          },
+          "reference": {"available": false, "status": "unavailable", "reason": "No reference assessment was produced for this run."},
+          "decision_history": {"available": false, "status": "unavailable", "reason": "No decision-history summary was produced for this run."},
+          "remaining_issues": [{"severity": "warning", "code": "TRUE_PEAK_TOO_CLOSE_TO_CEILING", "message": "Measured true-peak margin is tight."}]
+        }
+      ],
+      "aggregate": {
+        "successful_run_count": 1,
+        "failed_run_count": 0,
+        "qc_status_counts": {"warning": 1},
+        "reference_assessed_run_count": 0,
+        "decision_history_available_count": 0,
+        "warning_count": 1,
+        "fail_finding_count": 0,
+        "run_exception_count": 0
+      },
+      "shortlist": {
+        "safest_measured": [{"run_id": "song_alpha"}],
+        "closest_to_target": [{"run_id": "song_alpha"}],
+        "closest_to_reference": [],
+        "listen_first_objective_order": [{"run_id": "song_alpha"}],
+        "manual_review_recommended": [{"run_id": "song_alpha"}]
+      }
+    },
+    "candidate": {
+      "schema_version": "cognis_batch_session_v1",
+      "session_id": "candidate-improvement",
+      "session_root": "fixtures/candidate-improvement",
+      "run_count": 1,
+      "runs": [
+        {
+          "run_id": "song_alpha",
+          "track_id": "song_alpha",
+          "state": "success",
+          "mode": "STREAMING_SAFE",
+          "input_path": "corpus/song-alpha.wav",
+          "reference_path": null,
+          "tags": ["dogfood"],
+          "notes": null,
+          "output": {"run_dir": "runs/song_alpha", "audio": "runs/song_alpha/output.wav", "artifacts": {}},
+          "qc": {
+            "overall_status": "pass",
+            "warning_count": 0,
+            "fail_count": 0,
+            "warning_codes": [],
+            "fail_codes": []
+          },
+          "metrics": {
+            "integrated_lufs": -14.05,
+            "true_peak_dbfs": -1.5,
+            "target_loudness_lufs": -14.0,
+            "loudness_delta_lu": -0.05,
+            "abs_loudness_delta_lu": 0.05,
+            "true_peak_margin_db": 0.5,
+            "limiter_stress_estimate": 0.2,
+            "codec_risk_estimate": 0.1,
+            "clipping_risk_estimate": 0.0
+          },
+          "reference": {"available": false, "status": "unavailable", "reason": "No reference assessment was produced for this run."},
+          "decision_history": {"available": false, "status": "unavailable", "reason": "No decision-history summary was produced for this run."},
+          "remaining_issues": []
+        }
+      ],
+      "aggregate": {
+        "successful_run_count": 1,
+        "failed_run_count": 0,
+        "qc_status_counts": {"pass": 1},
+        "reference_assessed_run_count": 0,
+        "decision_history_available_count": 0,
+        "warning_count": 0,
+        "fail_finding_count": 0,
+        "run_exception_count": 0
+      },
+      "shortlist": {
+        "safest_measured": [{"run_id": "song_alpha"}],
+        "closest_to_target": [{"run_id": "song_alpha"}],
+        "closest_to_reference": [],
+        "listen_first_objective_order": [{"run_id": "song_alpha"}],
+        "manual_review_recommended": []
+      }
+    }
+  },
+  "regression": {
+    "baseline": {
+      "schema_version": "cognis_batch_session_v1",
+      "session_id": "baseline-regression",
+      "session_root": "fixtures/baseline-regression",
+      "run_count": 1,
+      "runs": [
+        {
+          "run_id": "song_beta",
+          "track_id": "song_beta",
+          "state": "success",
+          "mode": "STREAMING_SAFE",
+          "input_path": "corpus/song-beta.wav",
+          "reference_path": null,
+          "tags": ["dogfood"],
+          "notes": null,
+          "output": {"run_dir": "runs/song_beta", "audio": "runs/song_beta/output.wav", "artifacts": {}},
+          "qc": {"overall_status": "pass", "warning_count": 0, "fail_count": 0, "warning_codes": [], "fail_codes": []},
+          "metrics": {
+            "integrated_lufs": -14.03,
+            "true_peak_dbfs": -1.55,
+            "target_loudness_lufs": -14.0,
+            "loudness_delta_lu": -0.03,
+            "abs_loudness_delta_lu": 0.03,
+            "true_peak_margin_db": 0.55,
+            "limiter_stress_estimate": 0.2,
+            "codec_risk_estimate": 0.1,
+            "clipping_risk_estimate": 0.0
+          },
+          "reference": {"available": false, "status": "unavailable", "reason": "No reference assessment was produced for this run."},
+          "decision_history": {"available": false, "status": "unavailable", "reason": "No decision-history summary was produced for this run."},
+          "remaining_issues": []
+        }
+      ],
+      "aggregate": {"successful_run_count": 1, "failed_run_count": 0, "qc_status_counts": {"pass": 1}, "reference_assessed_run_count": 0, "decision_history_available_count": 0, "warning_count": 0, "fail_finding_count": 0, "run_exception_count": 0},
+      "shortlist": {"safest_measured": [{"run_id": "song_beta"}], "closest_to_target": [{"run_id": "song_beta"}], "closest_to_reference": [], "listen_first_objective_order": [{"run_id": "song_beta"}], "manual_review_recommended": []}
+    },
+    "candidate": {
+      "schema_version": "cognis_batch_session_v1",
+      "session_id": "candidate-regression",
+      "session_root": "fixtures/candidate-regression",
+      "run_count": 1,
+      "runs": [
+        {
+          "run_id": "song_beta",
+          "track_id": "song_beta",
+          "state": "success",
+          "mode": "STREAMING_SAFE",
+          "input_path": "corpus/song-beta.wav",
+          "reference_path": null,
+          "tags": ["dogfood"],
+          "notes": null,
+          "output": {"run_dir": "runs/song_beta", "audio": "runs/song_beta/output.wav", "artifacts": {}},
+          "qc": {"overall_status": "warning", "warning_count": 2, "fail_count": 0, "warning_codes": ["LOUDNESS_OUTSIDE_SOFT_BAND", "TRUE_PEAK_TOO_CLOSE_TO_CEILING"], "fail_codes": []},
+          "metrics": {
+            "integrated_lufs": -14.52,
+            "true_peak_dbfs": -1.05,
+            "target_loudness_lufs": -14.0,
+            "loudness_delta_lu": -0.52,
+            "abs_loudness_delta_lu": 0.52,
+            "true_peak_margin_db": 0.05,
+            "limiter_stress_estimate": 0.4,
+            "codec_risk_estimate": 0.3,
+            "clipping_risk_estimate": 0.0
+          },
+          "reference": {"available": false, "status": "unavailable", "reason": "No reference assessment was produced for this run."},
+          "decision_history": {"available": false, "status": "unavailable", "reason": "No decision-history summary was produced for this run."},
+          "remaining_issues": [{"severity": "warning", "code": "LOUDNESS_OUTSIDE_SOFT_BAND", "message": "Measured loudness moved farther from target."}]
+        }
+      ],
+      "aggregate": {"successful_run_count": 1, "failed_run_count": 0, "qc_status_counts": {"warning": 1}, "reference_assessed_run_count": 0, "decision_history_available_count": 0, "warning_count": 2, "fail_finding_count": 0, "run_exception_count": 0},
+      "shortlist": {"safest_measured": [{"run_id": "song_beta"}], "closest_to_target": [{"run_id": "song_beta"}], "closest_to_reference": [], "listen_first_objective_order": [{"run_id": "song_beta"}], "manual_review_recommended": [{"run_id": "song_beta"}]}
+    }
+  },
+  "mixed_inconclusive": {
+    "baseline": {
+      "schema_version": "cognis_batch_session_v1",
+      "session_id": "baseline-mixed",
+      "session_root": "fixtures/baseline-mixed",
+      "run_count": 1,
+      "runs": [
+        {
+          "run_id": "song_gamma",
+          "track_id": "song_gamma",
+          "state": "success",
+          "mode": "STREAMING_SAFE",
+          "input_path": "corpus/song-gamma.wav",
+          "reference_path": null,
+          "tags": ["stress"],
+          "notes": null,
+          "output": {"run_dir": "runs/song_gamma", "audio": "runs/song_gamma/output.wav", "artifacts": {}},
+          "qc": {"overall_status": "pass", "warning_count": 0, "fail_count": 0, "warning_codes": [], "fail_codes": []},
+          "metrics": {
+            "integrated_lufs": -14.2,
+            "true_peak_dbfs": -1.6,
+            "target_loudness_lufs": -14.0,
+            "loudness_delta_lu": -0.2,
+            "abs_loudness_delta_lu": 0.2,
+            "true_peak_margin_db": 0.6,
+            "limiter_stress_estimate": 0.2,
+            "codec_risk_estimate": 0.1,
+            "clipping_risk_estimate": 0.0
+          },
+          "reference": {"available": false, "status": "unavailable", "reason": "No reference assessment was produced for this run."},
+          "decision_history": {"available": false, "status": "unavailable", "reason": "No decision-history summary was produced for this run."},
+          "remaining_issues": []
+        }
+      ],
+      "aggregate": {"successful_run_count": 1, "failed_run_count": 0, "qc_status_counts": {"pass": 1}, "reference_assessed_run_count": 0, "decision_history_available_count": 0, "warning_count": 0, "fail_finding_count": 0, "run_exception_count": 0},
+      "shortlist": {"safest_measured": [{"run_id": "song_gamma"}], "closest_to_target": [{"run_id": "song_gamma"}], "closest_to_reference": [], "listen_first_objective_order": [{"run_id": "song_gamma"}], "manual_review_recommended": []}
+    },
+    "candidate": {
+      "schema_version": "cognis_batch_session_v1",
+      "session_id": "candidate-mixed",
+      "session_root": "fixtures/candidate-mixed",
+      "run_count": 1,
+      "runs": [
+        {
+          "run_id": "song_gamma",
+          "track_id": "song_gamma",
+          "state": "success",
+          "mode": "STREAMING_SAFE",
+          "input_path": "corpus/song-gamma.wav",
+          "reference_path": null,
+          "tags": ["stress"],
+          "notes": null,
+          "output": {"run_dir": "runs/song_gamma", "audio": "runs/song_gamma/output.wav", "artifacts": {}},
+          "qc": {"overall_status": "pass", "warning_count": 0, "fail_count": 0, "warning_codes": [], "fail_codes": []},
+          "metrics": {
+            "integrated_lufs": -14.05,
+            "true_peak_dbfs": -1.18,
+            "target_loudness_lufs": -14.0,
+            "loudness_delta_lu": -0.05,
+            "abs_loudness_delta_lu": 0.05,
+            "true_peak_margin_db": 0.18,
+            "limiter_stress_estimate": 0.2,
+            "codec_risk_estimate": 0.1,
+            "clipping_risk_estimate": 0.0
+          },
+          "reference": {"available": false, "status": "unavailable", "reason": "No reference assessment was produced for this run."},
+          "decision_history": {"available": false, "status": "unavailable", "reason": "No decision-history summary was produced for this run."},
+          "remaining_issues": []
+        }
+      ],
+      "aggregate": {"successful_run_count": 1, "failed_run_count": 0, "qc_status_counts": {"pass": 1}, "reference_assessed_run_count": 0, "decision_history_available_count": 0, "warning_count": 0, "fail_finding_count": 0, "run_exception_count": 0},
+      "shortlist": {"safest_measured": [{"run_id": "song_gamma"}], "closest_to_target": [{"run_id": "song_gamma"}], "closest_to_reference": [], "listen_first_objective_order": [{"run_id": "song_gamma"}], "manual_review_recommended": []}
+    }
+  },
+  "missing_run": {
+    "baseline": {
+      "schema_version": "cognis_batch_session_v1",
+      "session_id": "baseline-missing",
+      "session_root": "fixtures/baseline-missing",
+      "run_count": 1,
+      "runs": [
+        {
+          "run_id": "baseline_only",
+          "track_id": "baseline_only",
+          "state": "success",
+          "mode": "STREAMING_SAFE",
+          "input_path": "corpus/baseline-only.wav",
+          "reference_path": null,
+          "tags": ["dogfood"],
+          "notes": null,
+          "output": {"run_dir": "runs/baseline_only", "audio": "runs/baseline_only/output.wav", "artifacts": {}},
+          "qc": {"overall_status": "pass", "warning_count": 0, "fail_count": 0, "warning_codes": [], "fail_codes": []},
+          "metrics": {"integrated_lufs": -14.0, "true_peak_dbfs": -1.5, "target_loudness_lufs": -14.0, "loudness_delta_lu": 0.0, "abs_loudness_delta_lu": 0.0, "true_peak_margin_db": 0.5, "limiter_stress_estimate": 0.1, "codec_risk_estimate": 0.1, "clipping_risk_estimate": 0.0},
+          "reference": {"available": false, "status": "unavailable", "reason": "No reference assessment was produced for this run."},
+          "decision_history": {"available": false, "status": "unavailable", "reason": "No decision-history summary was produced for this run."},
+          "remaining_issues": []
+        }
+      ],
+      "aggregate": {"successful_run_count": 1, "failed_run_count": 0, "qc_status_counts": {"pass": 1}, "reference_assessed_run_count": 0, "decision_history_available_count": 0, "warning_count": 0, "fail_finding_count": 0, "run_exception_count": 0},
+      "shortlist": {"safest_measured": [{"run_id": "baseline_only"}], "closest_to_target": [{"run_id": "baseline_only"}], "closest_to_reference": [], "listen_first_objective_order": [{"run_id": "baseline_only"}], "manual_review_recommended": []}
+    },
+    "candidate": {
+      "schema_version": "cognis_batch_session_v1",
+      "session_id": "candidate-missing",
+      "session_root": "fixtures/candidate-missing",
+      "run_count": 1,
+      "runs": [
+        {
+          "run_id": "candidate_only",
+          "track_id": "candidate_only",
+          "state": "success",
+          "mode": "STREAMING_SAFE",
+          "input_path": "corpus/candidate-only.wav",
+          "reference_path": null,
+          "tags": ["dogfood"],
+          "notes": null,
+          "output": {"run_dir": "runs/candidate_only", "audio": "runs/candidate_only/output.wav", "artifacts": {}},
+          "qc": {"overall_status": "pass", "warning_count": 0, "fail_count": 0, "warning_codes": [], "fail_codes": []},
+          "metrics": {"integrated_lufs": -14.0, "true_peak_dbfs": -1.5, "target_loudness_lufs": -14.0, "loudness_delta_lu": 0.0, "abs_loudness_delta_lu": 0.0, "true_peak_margin_db": 0.5, "limiter_stress_estimate": 0.1, "codec_risk_estimate": 0.1, "clipping_risk_estimate": 0.0},
+          "reference": {"available": false, "status": "unavailable", "reason": "No reference assessment was produced for this run."},
+          "decision_history": {"available": false, "status": "unavailable", "reason": "No decision-history summary was produced for this run."},
+          "remaining_issues": []
+        }
+      ],
+      "aggregate": {"successful_run_count": 1, "failed_run_count": 0, "qc_status_counts": {"pass": 1}, "reference_assessed_run_count": 0, "decision_history_available_count": 0, "warning_count": 0, "fail_finding_count": 0, "run_exception_count": 0},
+      "shortlist": {"safest_measured": [{"run_id": "candidate_only"}], "closest_to_target": [{"run_id": "candidate_only"}], "closest_to_reference": [], "listen_first_objective_order": [{"run_id": "candidate_only"}], "manual_review_recommended": []}
+    }
+  },
+  "reference_aware": {
+    "baseline": {
+      "schema_version": "cognis_batch_session_v1",
+      "session_id": "baseline-reference",
+      "session_root": "fixtures/baseline-reference",
+      "run_count": 2,
+      "runs": [
+        {
+          "run_id": "plain_song",
+          "track_id": "plain_song",
+          "state": "success",
+          "mode": "STREAMING_SAFE",
+          "input_path": "corpus/plain-song.wav",
+          "reference_path": null,
+          "tags": ["non-reference"],
+          "notes": null,
+          "output": {"run_dir": "runs/plain_song", "audio": "runs/plain_song/output.wav", "artifacts": {}},
+          "qc": {"overall_status": "pass", "warning_count": 0, "fail_count": 0, "warning_codes": [], "fail_codes": []},
+          "metrics": {"integrated_lufs": -14.02, "true_peak_dbfs": -1.45, "target_loudness_lufs": -14.0, "loudness_delta_lu": -0.02, "abs_loudness_delta_lu": 0.02, "true_peak_margin_db": 0.45, "limiter_stress_estimate": 0.1, "codec_risk_estimate": 0.1, "clipping_risk_estimate": 0.0},
+          "reference": {"available": false, "status": "unavailable", "reason": "No reference assessment was produced for this run."},
+          "decision_history": {"available": false, "status": "unavailable", "reason": "No decision-history summary was produced for this run."},
+          "remaining_issues": []
+        },
+        {
+          "run_id": "ref_song",
+          "track_id": "ref_song",
+          "state": "success",
+          "mode": "REFERENCE_MATCH",
+          "input_path": "corpus/ref-song.wav",
+          "reference_path": "corpus/ref-song-reference.wav",
+          "tags": ["reference"],
+          "notes": null,
+          "output": {"run_dir": "runs/ref_song", "audio": "runs/ref_song/output.wav", "artifacts": {}},
+          "qc": {"overall_status": "pass", "warning_count": 0, "fail_count": 0, "warning_codes": [], "fail_codes": []},
+          "metrics": {"integrated_lufs": -14.18, "true_peak_dbfs": -1.4, "target_loudness_lufs": -14.0, "loudness_delta_lu": -0.18, "abs_loudness_delta_lu": 0.18, "true_peak_margin_db": 0.4, "limiter_stress_estimate": 0.2, "codec_risk_estimate": 0.1, "clipping_risk_estimate": 0.0},
+          "reference": {"available": true, "status": "partial", "average_normalized_residual": 0.8, "total_movement_toward_reference": 1.1, "matched_metric_count": 1, "comparison_count": 2, "comparisons": []},
+          "decision_history": {"available": true, "status": "available", "selection_basis": "exact_bounded_grid_search", "candidate_count": 4, "winner_candidate_index": 1, "runner_up_candidate_index": 2, "score_margin_to_runner_up": 0.25, "limitations": []},
+          "remaining_issues": []
+        }
+      ],
+      "aggregate": {"successful_run_count": 2, "failed_run_count": 0, "qc_status_counts": {"pass": 2}, "reference_assessed_run_count": 1, "decision_history_available_count": 1, "warning_count": 0, "fail_finding_count": 0, "run_exception_count": 0},
+      "shortlist": {"safest_measured": [{"run_id": "plain_song"}, {"run_id": "ref_song"}], "closest_to_target": [{"run_id": "plain_song"}, {"run_id": "ref_song"}], "closest_to_reference": [{"run_id": "ref_song"}], "listen_first_objective_order": [{"run_id": "plain_song"}, {"run_id": "ref_song"}], "manual_review_recommended": []}
+    },
+    "candidate": {
+      "schema_version": "cognis_batch_session_v1",
+      "session_id": "candidate-reference",
+      "session_root": "fixtures/candidate-reference",
+      "run_count": 2,
+      "runs": [
+        {
+          "run_id": "plain_song",
+          "track_id": "plain_song",
+          "state": "success",
+          "mode": "STREAMING_SAFE",
+          "input_path": "corpus/plain-song.wav",
+          "reference_path": null,
+          "tags": ["non-reference"],
+          "notes": null,
+          "output": {"run_dir": "runs/plain_song", "audio": "runs/plain_song/output.wav", "artifacts": {}},
+          "qc": {"overall_status": "pass", "warning_count": 0, "fail_count": 0, "warning_codes": [], "fail_codes": []},
+          "metrics": {"integrated_lufs": -14.02, "true_peak_dbfs": -1.45, "target_loudness_lufs": -14.0, "loudness_delta_lu": -0.02, "abs_loudness_delta_lu": 0.02, "true_peak_margin_db": 0.45, "limiter_stress_estimate": 0.1, "codec_risk_estimate": 0.1, "clipping_risk_estimate": 0.0},
+          "reference": {"available": false, "status": "unavailable", "reason": "No reference assessment was produced for this run."},
+          "decision_history": {"available": false, "status": "unavailable", "reason": "No decision-history summary was produced for this run."},
+          "remaining_issues": []
+        },
+        {
+          "run_id": "ref_song",
+          "track_id": "ref_song",
+          "state": "success",
+          "mode": "REFERENCE_MATCH",
+          "input_path": "corpus/ref-song.wav",
+          "reference_path": "corpus/ref-song-reference.wav",
+          "tags": ["reference"],
+          "notes": null,
+          "output": {"run_dir": "runs/ref_song", "audio": "runs/ref_song/output.wav", "artifacts": {}},
+          "qc": {"overall_status": "pass", "warning_count": 0, "fail_count": 0, "warning_codes": [], "fail_codes": []},
+          "metrics": {"integrated_lufs": -14.08, "true_peak_dbfs": -1.42, "target_loudness_lufs": -14.0, "loudness_delta_lu": -0.08, "abs_loudness_delta_lu": 0.08, "true_peak_margin_db": 0.42, "limiter_stress_estimate": 0.2, "codec_risk_estimate": 0.1, "clipping_risk_estimate": 0.0},
+          "reference": {"available": true, "status": "matched", "average_normalized_residual": 0.2, "total_movement_toward_reference": 1.7, "matched_metric_count": 2, "comparison_count": 2, "comparisons": []},
+          "decision_history": {"available": true, "status": "available", "selection_basis": "exact_bounded_grid_search", "candidate_count": 4, "winner_candidate_index": 1, "runner_up_candidate_index": 2, "score_margin_to_runner_up": 0.25, "limitations": []},
+          "remaining_issues": []
+        }
+      ],
+      "aggregate": {"successful_run_count": 2, "failed_run_count": 0, "qc_status_counts": {"pass": 2}, "reference_assessed_run_count": 1, "decision_history_available_count": 1, "warning_count": 0, "fail_finding_count": 0, "run_exception_count": 0},
+      "shortlist": {"safest_measured": [{"run_id": "plain_song"}, {"run_id": "ref_song"}], "closest_to_target": [{"run_id": "plain_song"}, {"run_id": "ref_song"}], "closest_to_reference": [{"run_id": "ref_song"}], "listen_first_objective_order": [{"run_id": "plain_song"}, {"run_id": "ref_song"}], "manual_review_recommended": []}
+    }
+  }
+}

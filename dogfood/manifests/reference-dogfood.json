@@ -1,0 +1,41 @@
+{
+  "schema_version": "cognis_batch_manifest_v1",
+  "corpus": {
+    "schema_version": "cognis_dogfood_corpus_v1",
+    "id": "reference_dogfood",
+    "name": "Reference-Aware Dogfood Corpus",
+    "version": 1,
+    "description": "Reference-aware corpus for measured target/reference tradeoff evaluation.",
+    "asset_policy": "external_or_local",
+    "asset_root": "../../local-corpora/reference-dogfood",
+    "tags": ["dogfood", "reference-based", "corpus:release-gate"]
+  },
+  "session": {
+    "id": "reference-dogfood",
+    "output_root": "../../build/dogfood/reference-dogfood"
+  },
+  "defaults": {
+    "modes": ["REFERENCE_MATCH"],
+    "options": {
+      "target_loudness": -14.0,
+      "ceiling_db": -1.0,
+      "ceiling_mode": "TRUE_PEAK",
+      "fir_backend": "AUTO"
+    },
+    "tags": ["reference-based", "delivery:streaming"]
+  },
+  "tracks": [
+    {
+      "id": "acoustic_reference_01",
+      "path": "premasters/acoustic-reference-01.wav",
+      "references": [{"id": "main", "path": "references/acoustic-reference-01-ref.wav"}],
+      "tags": ["genre:acoustic", "stress:dynamics", "stress:tonal-balance"]
+    },
+    {
+      "id": "low_end_reference_01",
+      "path": "premasters/low-end-reference-01.wav",
+      "references": [{"id": "main", "path": "references/low-end-reference-01-ref.wav"}],
+      "tags": ["genre:hiphop", "stress:low-end", "stress:mono"]
+    }
+  ]
+}

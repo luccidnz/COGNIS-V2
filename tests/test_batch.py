@@ -163,6 +163,30 @@ def test_session_artifact_summarizes_reference_and_non_reference_runs(tmp_path):
     assert standard["decision_history"]["status"] == "unavailable"
 
 
+def test_session_artifact_preserves_corpus_metadata_and_asset_root(tmp_path):
+    manifest = {
+        "schema_version": batch.BATCH_MANIFEST_SCHEMA_VERSION,
+        "corpus": {
+            "schema_version": batch.DOGFOOD_CORPUS_SCHEMA_VERSION,
+            "id": "core_dogfood",
+            "name": "Core Dogfood",
+            "version": 1,
+            "asset_policy": "external_or_local",
+            "asset_root": "local-corpora/core",
+            "tags": ["dogfood", "regression"],
+        },
+        "runs": [{"id": "track", "input": "premasters/track.wav", "mode": "STREAMING_SAFE"}],
+    }
+
+    plans = batch.expand_manifest(manifest, manifest_dir=tmp_path)
+    session = batch.build_session_artifact(manifest, [], session_root=tmp_path, manifest_path=tmp_path / "manifest.json")
+
+    assert plans[0].input_path == str((tmp_path / "local-corpora" / "core" / "premasters" / "track.wav").resolve())
+    assert session["corpus"]["schema_version"] == batch.DOGFOOD_CORPUS_SCHEMA_VERSION
+    assert session["corpus"]["id"] == "core_dogfood"
+    assert session["corpus"]["tags"] == ["dogfood", "regression"]
+
+
 def test_markdown_and_session_json_do_not_claim_best_sounding(tmp_path):
     plan = batch.BatchRunPlan("safe", "track", str(tmp_path / "input.wav"), "STREAMING_SAFE", None, {}, (), None)
     summary = batch.summarize_successful_run(

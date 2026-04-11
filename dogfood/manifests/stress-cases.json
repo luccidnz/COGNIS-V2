@@ -1,0 +1,39 @@
+{
+  "schema_version": "cognis_batch_manifest_v1",
+  "corpus": {
+    "schema_version": "cognis_dogfood_corpus_v1",
+    "id": "stress_cases",
+    "name": "Stress Case Corpus",
+    "version": 1,
+    "description": "Focused non-reference stress cases for regression triage.",
+    "asset_policy": "external_or_local",
+    "asset_root": "../../local-corpora/stress-cases",
+    "tags": ["dogfood", "stress", "corpus:nightly"]
+  },
+  "session": {
+    "id": "stress-cases",
+    "output_root": "../../build/dogfood/stress-cases"
+  },
+  "defaults": {
+    "modes": ["STREAMING_SAFE", "PRESERVE_DYNAMICS"],
+    "options": {
+      "target_loudness": -14.0,
+      "ceiling_db": -1.0,
+      "ceiling_mode": "TRUE_PEAK",
+      "fir_backend": "AUTO"
+    },
+    "tags": ["non-reference"]
+  },
+  "tracks": [
+    {
+      "id": "true_peak_edge_01",
+      "path": "premasters/true-peak-edge-01.wav",
+      "tags": ["stress:true-peak", "stress:limiter", "delivery:streaming"]
+    },
+    {
+      "id": "mono_low_end_01",
+      "path": "premasters/mono-low-end-01.wav",
+      "tags": ["stress:low-end", "stress:mono", "genre:electronic"]
+    }
+  ]
+}
